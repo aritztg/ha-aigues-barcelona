@@ -40,6 +40,18 @@ ACCOUNT_CONFIG_SCHEMA = vol.Schema(
 TOKEN_SCHEMA = vol.Schema({vol.Required(CONF_TOKEN): cv.string})
 
 
+def redacted(data) -> dict:
+    """A copy of a config dict with the secrets replaced by a marker.
+
+    These end up in the log at debug level, which is exactly what someone turns
+    on before pasting the output into an issue.
+    """
+    if not isinstance(data, dict):
+        return data
+    secret = (CONF_PASSWORD, CONF_TOKEN, CONF_API_KEY)
+    return {k: ("***" if k in secret and v else v) for k, v in data.items()}
+
+
 def check_valid_nif(username: str) -> bool:
     """Quick check for NIF/DNI/NIE and return if valid."""
 
@@ -164,12 +176,14 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
         _LOGGER.debug(
-            f"Current values on reauth_confirm: {self.entry} --> {user_input}"
+            "Current values on reauth_confirm: %s --> %s",
+            redacted(getattr(self.entry, "data", None)),
+            redacted(user_input),
         )
         user_input = {**self.stored_input, **user_input}
         try:
             info = await validate_credentials(self.hass, user_input)
-            _LOGGER.debug(f"Result is {info}")
+            _LOGGER.debug(f"Result is {redacted(info)}")
             if not info:  # invalid oauth token
                 raise InvalidAuth
 
@@ -208,7 +222,7 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             self.stored_input = user_input
             info = await validate_credentials(self.hass, user_input)
-            _LOGGER.debug(f"Result is {info}")
+            _LOGGER.debug(f"Result is {redacted(info)}")
             if not info:
                 raise InvalidAuth
             contracts = info[CONF_CONTRACT]
@@ -238,7 +252,9 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except AlreadyConfigured:
             errors["base"] = "already_configured"
         else:
-            _LOGGER.debug(f"Creating entity with {user_input} and {contracts=}")
+            _LOGGER.debug(
+                f"Creating entity with {redacted(user_input)} and {contracts=}"
+            )
             nif_oculto = user_input[CONF_USERNAME][-3:][0:2]
 
             return self.async_create_entry(
