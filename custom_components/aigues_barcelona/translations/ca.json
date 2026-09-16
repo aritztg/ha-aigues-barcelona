@@ -20,7 +20,7 @@
           "api_key": "Clau d'API del servei de navegador (opcional)"
         },
         "title": "Configurar integraci\u00f3",
-        "description": "Amb una clau, la integraci\u00f3 resol sola el captcha de l'inici de sessi\u00f3 i renova el token quan caduca. Les teves credencials no surten de Home Assistant: el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes i cada inici de sessi\u00f3 en gasta unes 11. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
+        "description": "Amb una clau, la integraci\u00f3 resol sola el captcha de l'inici de sessi\u00f3 i renova el token quan caduca. Les teves credencials no surten de Home Assistant: el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes; un inici de sessi\u00f3 sol gastar-ne 11 o 12, i fins a 14 si Google triga a resoldre el repte. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
       },
       "token": {
         "data": {

@@ -20,7 +20,7 @@
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
         "title": "Configurar integraci\u00f3n",
-        "description": "Con una clave, la integraci\u00f3n resuelve sola el captcha del login y renueva el token cuando caduca. Tus credenciales no salen de Home Assistant: el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y cada login gasta unas 11. Sin clave, tendr\u00e1s que pegar el token a mano."
+        "description": "Con una clave, la integraci\u00f3n resuelve sola el captcha del login y renueva el token cuando caduca. Tus credenciales no salen de Home Assistant: el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes; un login suele gastar 11 o 12, y hasta 14 si Google tarda en resolver el reto. Sin clave, tendr\u00e1s que pegar el token a mano."
       },
       "token": {
         "data": {

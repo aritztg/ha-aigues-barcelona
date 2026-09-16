@@ -30,12 +30,17 @@ Browserless regala 1000 unidades al mes sin pedir tarjeta. Medido sobre el login
 
 | concepto | unidades |
 | --- | --- |
-| la sesión de navegador, 18 a 25 segundos | 1 |
+| la sesión de navegador, un bloque por cada 30 segundos | 1 a 4 |
 | resolver el reto de imágenes | 10 |
-| **un login completo** | **11** |
+| **un login completo** | **11 o 12, hasta 14** |
 | leer contratos y consumos | 0 |
 
-Con una consulta diaria son 330 unidades al mes, un tercio del plan gratuito. Las lecturas
+Lo que varía es el reto: Google lo ha resuelto en 7 segundos unas veces y en 43 otras, y
+la sesión se cobra por bloques de 30. Por encima de 14 no sube, porque la espera del reto
+está limitada a 60 segundos y la del script a 20.
+
+Con una consulta diaria salen unas 360 unidades al mes, poco más de un tercio del plan
+gratuito, y con margen de sobra para los días malos. Las lecturas
 no pasan por Browserless: una vez hay token, Home Assistant llama a la API por su cuenta.
 
 Y por eso la integración consulta **una vez al día**: el token dura una hora, así que cada
