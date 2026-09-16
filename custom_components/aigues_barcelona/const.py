@@ -10,7 +10,11 @@ CONF_VALUE = "value"
 
 ATTR_LAST_MEASURE = "Last measure"
 
-DEFAULT_SCAN_PERIOD = 14400
+# Once a day. The readings arrive one to four days late, so asking more often
+# tells you nothing new, and each poll that finds the hour-long token expired
+# costs a login: about 11 units of the 1000 a free Browserless account gets per
+# month, which is 330 a month at this rate and would not fit at four hours.
+DEFAULT_SCAN_PERIOD = 86400
 
 API_HOST = "api.aiguesdebarcelona.cat"
 API_COOKIE_TOKEN = "ofexTokenJwt"
