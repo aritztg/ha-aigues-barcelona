@@ -79,7 +79,7 @@ async def validate_credentials(
             raise RecaptchaAppeared
         _LOGGER.info("Attempting to login")
         try:
-            token = await async_login(hass, api_key, username, password)
+            token = await async_login(hass, api_key, username, password, force=True)
         except (ServiceUnavailable, ChallengeUnsolved, TooSoon) as err:
             raise CaptchaServiceFailed(str(err)) from err
         except LoginFailed as err:

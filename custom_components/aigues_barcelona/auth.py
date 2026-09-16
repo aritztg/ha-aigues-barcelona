@@ -45,6 +45,19 @@ class TooSoon(HomeAssistantError):
     """Another login was attempted recently, or one just failed."""
 
 
+def _explain(error: str, last_response) -> str:
+    """Turn whatever the site said into something worth reading in a log."""
+    blob = f"{error} {last_response}"
+    if "MAX_SESSIONS" in blob:
+        return (
+            "The account has too many sessions open. Each login opens one that "
+            "nobody closes; they time out after about an hour idle."
+        )
+    if "LOGIN_ERROR" in blob or "incorrect" in blob.lower():
+        return "The site rejected the username or the password"
+    return (error or str(last_response) or "the site refused the login")[:200]
+
+
 def token_expiry(token: str) -> float:
     """Return the `exp` claim of a JWT, or an hour out if it has none."""
     try:
@@ -62,25 +75,37 @@ def token_needs_renewal(token: str) -> bool:
 
 
 async def async_login(
-    hass: HomeAssistant, api_key: str, username: str, password: str
+    hass: HomeAssistant,
+    api_key: str,
+    username: str,
+    password: str,
+    force: bool = False,
 ) -> str:
     """Fetch a reCAPTCHA token elsewhere, then log in from here.
 
     The credentials go straight to the site from this machine. Only the
     reCAPTCHA token is made remotely, and it carries nothing about the account.
+
+    `force` is for someone sitting in front of the setup dialog: the pacing
+    below exists to stop unattended retries from spending the month's units, not
+    to make a person wait eleven hours because they mistyped their password.
     """
     state = hass.data.setdefault(DOMAIN, {}).setdefault(AUTH_STATE, {})
     now = dt_util.utcnow()
 
-    blocked_until: datetime | None = state.get("blocked_until")
-    if blocked_until and now < blocked_until:
-        raise TooSoon(f"Not logging in again until {blocked_until:%Y-%m-%d %H:%M} UTC")
+    if not force:
+        blocked_until: datetime | None = state.get("blocked_until")
+        if blocked_until and now < blocked_until:
+            raise TooSoon(
+                f"Not logging in again until {blocked_until:%Y-%m-%d %H:%M} UTC"
+            )
 
-    last: datetime | None = state.get("last_attempt")
-    if last and now - last < LOGIN_COOLDOWN:
-        raise TooSoon(
-            f"Last login was {(now - last).seconds // 3600} hours ago; too soon for another"
-        )
+        last: datetime | None = state.get("last_attempt")
+        if last and now - last < LOGIN_COOLDOWN:
+            raise TooSoon(
+                f"Last login was {(now - last).seconds // 3600} hours ago; "
+                "too soon for another"
+            )
 
     # Counted before anything can fail, so a setup that cannot work is not
     # retried on every poll and every restart.
@@ -93,14 +118,15 @@ async def async_login(
         raise
 
     client = AiguesApiClient(username, password)
-    token = await hass.async_add_executor_job(
-        partial(client.login, username, password, captcha)
-    )
+    try:
+        token = await hass.async_add_executor_job(
+            partial(client.login, username, password, captcha)
+        )
+    except Exception as err:  # noqa: BLE001 - the client raises bare ones by status
+        raise LoginFailed(_explain(str(err), client.last_response)) from err
+
     if not token:
-        # Wrong credentials, or the account has too many sessions open. Either
-        # way another attempt in a minute will not help.
-        state["blocked_until"] = now + LOGIN_BACKOFF
-        raise LoginFailed(str(client.last_response)[:200])
+        raise LoginFailed(_explain("", client.last_response))
 
     state.pop("blocked_until", None)
     _LOGGER.info(
