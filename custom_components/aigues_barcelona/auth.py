@@ -112,7 +112,9 @@ async def async_login(
     state["last_attempt"] = now
 
     try:
-        captcha = await async_fetch_captcha_token(async_get_clientsession(hass), api_key)
+        captcha = await async_fetch_captcha_token(
+            async_get_clientsession(hass), api_key
+        )
     except (ServiceUnavailable, ChallengeUnsolved):
         state["blocked_until"] = now + LOGIN_BACKOFF
         raise
@@ -158,5 +160,7 @@ async def async_renew_token(hass: HomeAssistant, entry) -> str | None:
         _LOGGER.warning("Could not renew the token: %s", err)
         return None
 
-    hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_TOKEN: token})
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_TOKEN: token}
+    )
     return token

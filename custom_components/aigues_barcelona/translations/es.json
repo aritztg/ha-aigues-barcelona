@@ -9,32 +9,32 @@
       "invalid_auth": "Invalid credentials",
       "token_expired": "El Token OAuth ha caducado, por favor genera uno nuevo",
       "captcha_service": "No se pudo usar el servicio de navegador: revisa la clave de API, o comprueba si te quedan unidades este mes.",
-      "captcha_unsolved": "Google puso un reto de imágenes y el servicio no lo resolvió. Vuelve a intentarlo en unos minutos.",
-      "too_soon": "Se ha intentado iniciar sesión hace muy poco. Espera un rato o reinicia Home Assistant."
+      "captcha_unsolved": "Google puso un reto de im\u00e1genes y el servicio no lo resolvi\u00f3. Vuelve a intentarlo en unos minutos.",
+      "too_soon": "Se ha intentado iniciar sesi\u00f3n hace muy poco. Espera un rato o reinicia Home Assistant."
     },
     "step": {
       "user": {
         "data": {
           "username": "Usuario (DNI/NIE)",
-          "password": "Contraseña",
+          "password": "Contrase\u00f1a",
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
-        "title": "Configurar integración",
-        "description": "Con una clave, la integración resuelve sola el captcha del login y renueva el token cuando caduca. Tus credenciales no salen de Home Assistant: el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y cada login gasta unas 11. Sin clave, tendrás que pegar el token a mano."
+        "title": "Configurar integraci\u00f3n",
+        "description": "Con una clave, la integraci\u00f3n resuelve sola el captcha del login y renueva el token cuando caduca. Tus credenciales no salen de Home Assistant: el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y cada login gasta unas 11. Sin clave, tendr\u00e1s que pegar el token a mano."
       },
       "token": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Introduce el Token OAuth",
-        "description": "Debido a que Aigües de Barcelona utiliza Recaptcha para iniciar sesión, no se puede iniciar sesión automáticamente desde Home Assistant, así que tienes que iniciar sesión desde la web, y proporcionar el token.\nCopia y pega el token aquí (empieza por ey....)"
+        "description": "Debido a que Aig\u00fces de Barcelona utiliza Recaptcha para iniciar sesi\u00f3n, no se puede iniciar sesi\u00f3n autom\u00e1ticamente desde Home Assistant, as\u00ed que tienes que iniciar sesi\u00f3n desde la web, y proporcionar el token.\nCopia y pega el token aqu\u00ed (empieza por ey....)"
       },
       "reauth_confirm": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Relogin - Introduce el Token OAuth",
-        "description": "Debido a que Aigües de Barcelona utiliza Recaptcha para iniciar sesión, no se puede iniciar sesión automáticamente desde Home Assistant, así que tienes que iniciar sesión desde la web, y proporcionar el token.\nCopia y pega el token aquí (empieza por ey....)"
+        "description": "Debido a que Aig\u00fces de Barcelona utiliza Recaptcha para iniciar sesi\u00f3n, no se puede iniciar sesi\u00f3n autom\u00e1ticamente desde Home Assistant, as\u00ed que tienes que iniciar sesi\u00f3n desde la web, y proporcionar el token.\nCopia y pega el token aqu\u00ed (empieza por ey....)"
       }
     }
   }

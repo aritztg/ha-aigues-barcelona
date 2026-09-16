@@ -43,8 +43,8 @@ TOKEN_SCHEMA = vol.Schema({vol.Required(CONF_TOKEN): cv.string})
 def redacted(data) -> dict:
     """A copy of a config dict with the secrets replaced by a marker.
 
-    These end up in the log at debug level, which is exactly what someone turns
-    on before pasting the output into an issue.
+    These end up in the log at debug level, which is exactly what
+    someone turns on before pasting the output into an issue.
     """
     if not isinstance(data, dict):
         return data
@@ -271,8 +271,8 @@ class AlreadyConfigured(HomeAssistantError):
 
 
 class CaptchaServiceFailed(HomeAssistantError):
-    """Error to indicate the browser service was unreachable, would not take the
-    key, or has no units left this month."""
+    """Error to indicate the browser service was unreachable, would not take
+    the key, or has no units left this month."""
 
 
 class ChallengeLost(HomeAssistantError):

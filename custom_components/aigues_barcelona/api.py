@@ -92,9 +92,10 @@ class AiguesApiClient:
     def login(self, user=None, password=None, recaptcha=None):
         """Log in and return the access token, or False.
 
-        The reCAPTCHA response is checked against Google server side, so a made
-        up one comes back as invalid-input-response. A real one has to be minted
-        by a browser on the site's domain; see browserless.py.
+        The reCAPTCHA response is checked against Google server side, so
+        a made up one comes back as invalid-input-response. A real one
+        has to be minted by a browser on the site's domain; see
+        browserless.py.
         """
         if user is None:
             user = self._username

@@ -199,8 +199,8 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
     async def _async_ensure_token(self) -> None:
         """Make sure the client holds a token that is still good.
 
-        Only reaches for a new one once the stored token is spent, because
-        getting one costs a login.
+        Only reaches for a new one once the stored token is spent,
+        because getting one costs a login.
         """
         if self.entry is None:
             if self._api.is_token_expired():

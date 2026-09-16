@@ -9,8 +9,8 @@
       "invalid_auth": "Credencials incorrectes",
       "token_expired": "El Token OAuth ha caducat, si us plau genera'n un de nou.",
       "captcha_service": "No s'ha pogut fer servir el servei de navegador: revisa la clau d'API, o comprova si et queden unitats aquest mes.",
-      "captcha_unsolved": "Google ha posat un repte d'imatges i el servei no l'ha resolt. Torna-ho a provar d'aquí a uns minuts.",
-      "too_soon": "S'ha intentat iniciar sessió fa molt poc. Espera una estona o reinicia Home Assistant."
+      "captcha_unsolved": "Google ha posat un repte d'imatges i el servei no l'ha resolt. Torna-ho a provar d'aqu\u00ed a uns minuts.",
+      "too_soon": "S'ha intentat iniciar sessi\u00f3 fa molt poc. Espera una estona o reinicia Home Assistant."
     },
     "step": {
       "user": {
@@ -19,22 +19,22 @@
           "password": "Contrasenya",
           "api_key": "Clau d'API del servei de navegador (opcional)"
         },
-        "title": "Configurar integració",
-        "description": "Amb una clau, la integració resol sola el captcha de l'inici de sessió i renova el token quan caduca. Les teves credencials no surten de Home Assistant: el servei remot només genera el captcha. Browserless regala 1000 unitats al mes i cada inici de sessió en gasta unes 11. Sense clau, hauràs d'enganxar el token a mà."
+        "title": "Configurar integraci\u00f3",
+        "description": "Amb una clau, la integraci\u00f3 resol sola el captcha de l'inici de sessi\u00f3 i renova el token quan caduca. Les teves credencials no surten de Home Assistant: el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes i cada inici de sessi\u00f3 en gasta unes 11. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
       },
       "token": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Introdueix el Token OAuth",
-        "description": "Com que Aigües de Barcelona utilitza Recaptcha per a iniciar sessió, no es pot iniciar sessió automàticament des de Home Assistant, així que has d'iniciar sessió des de la web, i proporcionar el token.\nCopia i enganxa el token aquí (comença per ey....)"
+        "description": "Com que Aig\u00fces de Barcelona utilitza Recaptcha per a iniciar sessi\u00f3, no es pot iniciar sessi\u00f3 autom\u00e0ticament des de Home Assistant, aix\u00ed que has d'iniciar sessi\u00f3 des de la web, i proporcionar el token.\nCopia i enganxa el token aqu\u00ed (comen\u00e7a per ey....)"
       },
       "reauth_confirm": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Relogin - Introdueix el Token OAuth",
-        "description": "Com que Aigües de Barcelona utilitza Recaptcha per a iniciar sessió, no es pot iniciar sessió automàticament des de Home Assistant, així que has d'iniciar sessió des de la web, i proporcionar el token.\nCopia i enganxa el token aquí (comença per ey....)"
+        "description": "Com que Aig\u00fces de Barcelona utilitza Recaptcha per a iniciar sessi\u00f3, no es pot iniciar sessi\u00f3 autom\u00e0ticament des de Home Assistant, aix\u00ed que has d'iniciar sessi\u00f3 des de la web, i proporcionar el token.\nCopia i enganxa el token aqu\u00ed (comen\u00e7a per ey....)"
       }
     }
   }
