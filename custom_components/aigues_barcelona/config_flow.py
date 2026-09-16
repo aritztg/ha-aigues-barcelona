@@ -80,8 +80,15 @@ async def validate_credentials(
         _LOGGER.info("Attempting to login")
         try:
             token = await async_login(hass, api_key, username, password, force=True)
-        except (ServiceUnavailable, ChallengeUnsolved, TooSoon) as err:
+        except ServiceUnavailable as err:
+            _LOGGER.warning("Browser service unavailable: %s", err)
             raise CaptchaServiceFailed(str(err)) from err
+        except ChallengeUnsolved as err:
+            _LOGGER.warning("Challenge not solved: %s", err)
+            raise ChallengeLost(str(err)) from err
+        except TooSoon as err:
+            _LOGGER.warning("Login paced out: %s", err)
+            raise WaitingItOut(str(err)) from err
         except LoginFailed as err:
             _LOGGER.warning("Login refused: %s", err)
             raise InvalidAuth from err
@@ -217,6 +224,10 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         except CaptchaServiceFailed:
             errors["base"] = "captcha_service"
+        except ChallengeLost:
+            errors["base"] = "captcha_unsolved"
+        except WaitingItOut:
+            errors["base"] = "too_soon"
         except RecaptchaAppeared:
             # Ask for OAuth Token to login.
             return self.async_show_form(step_id="token", data_schema=TOKEN_SCHEMA)
@@ -244,9 +255,16 @@ class AlreadyConfigured(HomeAssistantError):
 
 
 class CaptchaServiceFailed(HomeAssistantError):
-    """Error to indicate the browser service could not produce a reCAPTCHA
-    token: a key it will not take, no units left, or a challenge it could not
-    solve."""
+    """Error to indicate the browser service was unreachable, would not take the
+    key, or has no units left this month."""
+
+
+class ChallengeLost(HomeAssistantError):
+    """Error to indicate Google put up a challenge that was not solved."""
+
+
+class WaitingItOut(HomeAssistantError):
+    """Error to indicate a login was attempted too recently to try again."""
 
 
 class RecaptchaAppeared(HomeAssistantError):

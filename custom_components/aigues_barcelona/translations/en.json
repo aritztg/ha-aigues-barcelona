@@ -8,7 +8,9 @@
       "already_configured": "Error: Account is already configured",
       "invalid_auth": "Invalid credentials",
       "token_expired": "OAuth Token has expired, please issue a new one",
-      "captcha_service": "The browser service could not mint a captcha: key refused, no units left this month, or a challenge it could not solve."
+      "captcha_service": "The browser service could not be used: check the API key, or whether any units are left this month.",
+      "captcha_unsolved": "Google put up an image challenge and the service did not solve it. Try again in a few minutes.",
+      "too_soon": "A login was attempted very recently. Wait a while, or restart Home Assistant."
     },
     "step": {
       "user": {

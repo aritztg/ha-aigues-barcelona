@@ -8,7 +8,9 @@
       "already_configured": "Error: Account is already configured",
       "invalid_auth": "Invalid credentials",
       "token_expired": "El Token OAuth ha caducado, por favor genera uno nuevo",
-      "captcha_service": "El servicio de navegador no pudo generar el captcha: clave rechazada, sin unidades este mes, o reto sin resolver."
+      "captcha_service": "No se pudo usar el servicio de navegador: revisa la clave de API, o comprueba si te quedan unidades este mes.",
+      "captcha_unsolved": "Google puso un reto de imágenes y el servicio no lo resolvió. Vuelve a intentarlo en unos minutos.",
+      "too_soon": "Se ha intentado iniciar sesión hace muy poco. Espera un rato o reinicia Home Assistant."
     },
     "step": {
       "user": {
