@@ -48,7 +48,10 @@ class AiguesApiClient:
             return False
 
         data = token.split(".")[1]
-        _LOGGER.debug(data)
+        # Not the payload itself: it carries the account holder's name, and
+        # debug logging is what people turn on before pasting output into an
+        # issue.
+        _LOGGER.debug("Reading %s out of the token", key)
         # add padding to avoid failures
         data = base64.urlsafe_b64decode(data + "==")
 
