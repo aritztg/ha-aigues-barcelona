@@ -90,11 +90,16 @@ class AiguesApiClient:
         return resp
 
     def login(self, user=None, password=None, recaptcha=None):
+        """Log in and return the access token, or False.
+
+        The reCAPTCHA response is checked against Google server side, so a made
+        up one comes back as invalid-input-response. A real one has to be minted
+        by a browser on the site's domain; see browserless.py.
+        """
         if user is None:
             user = self._username
         if password is None:
             password = self._password
-        # recaptcha seems to not be validated?
         if recaptcha is None:
             recaptcha = ""
 
@@ -124,10 +129,9 @@ class AiguesApiClient:
             _LOGGER.warning("Access token missing")
             return False
 
-        return True
-
-        # set as cookie: ofexTokenJwt
-        # https://www.aiguesdebarcelona.cat/ca/area-clientes
+        # The same value the site keeps in its ofexTokenJwt cookie, which is what
+        # every other call here authenticates with.
+        return access_token
 
     def set_token(self, token: str):
         host = ".".join(self.api_host.split(".")[1:])
