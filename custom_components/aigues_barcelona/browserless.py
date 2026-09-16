@@ -1,15 +1,17 @@
 """Get a reCAPTCHA token for the login, using a browser somewhere else.
 
-The login endpoint checks a reCAPTCHA response against Google server side, and
-only the reCAPTCHA script running in a browser on the site's own domain produces
-one it accepts. Home Assistant cannot run that browser: on Home Assistant OS the
-core container is Alpine, where the usual stealth browsers will not install, let
-alone run. So a remote browser makes the token and this asks for it over HTTPS,
-which Alpine has no opinion about.
+The login endpoint checks a reCAPTCHA response against Google server
+side, and only the reCAPTCHA script running in a browser on the site's
+own domain produces one it accepts. Home Assistant cannot run that
+browser: on Home Assistant OS the core container is Alpine, where the
+usual stealth browsers will not install, let alone run. So a remote
+browser makes the token and this asks for it over HTTPS, which Alpine
+has no opinion about.
 
-Only the token comes from there. The login itself is a plain POST that Home
-Assistant makes on its own, so the credentials never leave this machine, and the
-request arrives from the same address the site is used to seeing.
+Only the token comes from there. The login itself is a plain POST that
+Home Assistant makes on its own, so the credentials never leave this
+machine, and the request arrives from the same address the site is used
+to seeing.
 """
 
 from __future__ import annotations
@@ -36,54 +38,79 @@ ORIGIN = "https://www.aiguesdebarcelona.cat/es/area-clientes"
 # waits for something to paint, and an empty body never does.
 STUB = "<!doctype html><html><head><title>.</title></head><body><p>.</p></body></html>"
 
-# One request, and everything the browser has to do is in it. Rendering our own
-# invisible widget rather than driving the site's login form means nothing here
-# depends on their markup, their cookie banner, or their app still working.
+# Waits for the reCAPTCHA API to arrive, renders an invisible widget with the
+# site's own key, and runs it. Driving our own widget instead of their login
+# form means nothing here depends on their markup, their cookie banner, or their
+# app still working.
+READY = "() => typeof window.grecaptcha !== 'undefined' && !!window.grecaptcha.render"
+RENDER = f"""
+(() => {{
+  const box = document.createElement('div');
+  document.body.appendChild(box);
+  window.__tok = null;
+  window.__wid = window.grecaptcha.render(box, {{
+    sitekey: '{RECAPTCHA_SITEKEY}', size: 'invisible',
+    callback: t => {{ window.__tok = t; }}
+  }});
+  window.grecaptcha.execute(window.__wid);
+  return 'ok';
+}})()
+"""
+GRAB = """
+(() => {
+  let t = window.__tok;
+  try { if (!t) t = window.grecaptcha.getResponse(window.__wid); } catch (e) {}
+  return t || '';
+})()
+"""
+
+# Everything the browser has to do, in one request. Values go in as GraphQL
+# variables rather than being formatted into the text, which keeps the braces
+# here meaning what they mean in GraphQL.
 QUERY = """
-mutation Captcha {
-  stub: fulfill(url: "%s*", status: 200, contentType: "text/html", body: %s) { time }
-  goto(url: "%s", waitUntil: domContentLoaded) { status }
+mutation Captcha(
+  $pattern: [String], $stub: String!, $url: String!
+  $ready: String!, $render: String!, $grab: String!
+) {
+  stub: fulfill(url: $pattern, status: 200, contentType: "text/html", body: $stub) { time }
+  goto(url: $url, waitUntil: domContentLoaded) { status }
   api: addScriptTag(url: "https://www.google.com/recaptcha/api.js?render=explicit") { time }
-  ready: waitForFunction(fn: %s, timeout: 20000) { time }
-  start: evaluate(content: %s) { value }
+  ready: waitForFunction(fn: $ready, timeout: 20000) { time }
+  start: evaluate(content: $render) { value }
   captcha: solve(type: recaptcha, timeout: 60000) { found solved time }
   settle: waitForTimeout(time: 1000) { time }
-  grab: evaluate(content: %s) { value }
+  grab: evaluate(content: $grab) { value }
 }
-""" % (
-    ORIGIN,
-    json.dumps(STUB),
-    ORIGIN,
-    json.dumps("() => typeof window.grecaptcha !== 'undefined' && !!window.grecaptcha.render"),
-    json.dumps(
-        "(() => { const box = document.createElement('div');"
-        " document.body.appendChild(box); window.__tok = null;"
-        " window.__wid = window.grecaptcha.render(box, {sitekey: '%s',"
-        " size: 'invisible', callback: t => { window.__tok = t; }});"
-        " window.grecaptcha.execute(window.__wid); return 'ok'; })()" % RECAPTCHA_SITEKEY
-    ),
-    json.dumps(
-        "(() => { let t = window.__tok;"
-        " try { if (!t) t = window.grecaptcha.getResponse(window.__wid); } catch (e) {}"
-        " return t || ''; })()"
-    ),
-)
+"""
+
+VARIABLES = {
+    "pattern": [f"{ORIGIN}*"],
+    "stub": STUB,
+    "url": ORIGIN,
+    "ready": READY,
+    "render": RENDER,
+    "grab": GRAB,
+}
 
 
 class ServiceUnavailable(HomeAssistantError):
-    """The browser service could not be reached, or refused the key or quota."""
+    """The browser service could not be reached, or refused the key or
+    quota."""
 
 
 class ChallengeUnsolved(HomeAssistantError):
     """Google put a challenge up and it was not solved."""
 
 
-async def async_fetch_captcha_token(session, api_key: str, endpoint: str = BQL_ENDPOINT) -> str:
-    """Return a reCAPTCHA response token, freshly minted and good for two minutes."""
+async def async_fetch_captcha_token(
+    session, api_key: str, endpoint: str = BQL_ENDPOINT
+) -> str:
+    """Return a reCAPTCHA response token, freshly minted and good for two
+    minutes."""
     try:
         response = await session.post(
             f"{endpoint}?token={api_key}",
-            json={"query": QUERY},
+            json={"query": QUERY, "variables": VARIABLES},
             # Solving a challenge has taken anywhere from 17 to 43 seconds. The
             # ceiling is only here so a hung request cannot wedge the coordinator.
             timeout=ClientTimeout(total=180),
