@@ -7,29 +7,32 @@
     "error": {
       "already_configured": "Error: Account is already configured",
       "invalid_auth": "Invalid credentials",
-      "token_expired": "OAuth Token has expired, please issue a new one"
+      "token_expired": "OAuth Token has expired, please issue a new one",
+      "captcha_service": "The browser service could not mint a captcha: key refused, no units left this month, or a challenge it could not solve."
     },
     "step": {
       "user": {
         "data": {
           "username": "Username (DNI/NIE)",
-          "password": "Password"
+          "password": "Password",
+          "api_key": "Browser service API key (optional)"
         },
-        "title": "Setup integration"
+        "title": "Setup integration",
+        "description": "With a key, the integration solves the login captcha itself and renews the token when it expires. Your credentials never leave Home Assistant: the remote service only mints the captcha. Browserless gives 1000 free units a month and each login spends about 11. Without a key, you have to paste the token by hand."
       },
       "token": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Provide user OAuth Token",
-        "description": "Since Aig\u00fces de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
+        "description": "Since Aigües de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
       },
       "reauth_confirm": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Relogin - Provide user OAuth Token",
-        "description": "Since Aig\u00fces de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
+        "description": "Since Aigües de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
       }
     }
   }

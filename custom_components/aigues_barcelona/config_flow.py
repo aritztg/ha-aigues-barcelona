@@ -11,11 +11,18 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_TOKEN
 from homeassistant.const import CONF_USERNAME
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import AiguesApiClient
+from .auth import async_login
+from .auth import LoginFailed
+from .auth import TooSoon
+from .browserless import ChallengeUnsolved
+from .browserless import ServiceUnavailable
 from .const import API_ERROR_TOKEN_REVOKED
+from .const import CONF_API_KEY
 from .const import CONF_CONTRACT
 from .const import DOMAIN
 
@@ -25,6 +32,9 @@ ACCOUNT_CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
+        # Left empty, the token has to be pasted by hand every hour, which is
+        # how this integration worked before.
+        vol.Optional(CONF_API_KEY): cv.string,
     }
 )
 TOKEN_SCHEMA = vol.Schema({vol.Required(CONF_TOKEN): cv.string})
@@ -61,20 +71,29 @@ async def validate_credentials(
     if not check_valid_nif(username):
         raise InvalidUsername
 
+    api = AiguesApiClient(username, password)
+
+    if not token:
+        api_key = data.get(CONF_API_KEY)
+        if not api_key:
+            raise RecaptchaAppeared
+        _LOGGER.info("Attempting to login")
+        try:
+            token = await async_login(hass, api_key, username, password)
+        except (ServiceUnavailable, ChallengeUnsolved, TooSoon) as err:
+            raise CaptchaServiceFailed(str(err)) from err
+        except LoginFailed as err:
+            _LOGGER.warning("Login refused: %s", err)
+            raise InvalidAuth from err
+        _LOGGER.info("Login succeeded!")
+
+    api.set_token(token)
+
     try:
-        api = AiguesApiClient(username, password)
-        if token:
-            api.set_token(token)
-        else:
-            _LOGGER.info("Attempting to login")
-            login = await hass.async_add_executor_job(api.login)
-            if not login:
-                raise InvalidAuth
-            _LOGGER.info("Login succeeded!")
         contracts = await hass.async_add_executor_job(api.contracts, username)
 
         available_contracts = [x["contractDetail"]["contractNumber"] for x in contracts]
-        return {CONF_CONTRACT: available_contracts}
+        return {CONF_CONTRACT: available_contracts, CONF_TOKEN: token}
 
     except Exception:
         _LOGGER.debug(f"Last data: {api.last_response}")
@@ -196,6 +215,8 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="token", data_schema=TOKEN_SCHEMA, errors=errors
             )
+        except CaptchaServiceFailed:
+            errors["base"] = "captcha_service"
         except RecaptchaAppeared:
             # Ask for OAuth Token to login.
             return self.async_show_form(step_id="token", data_schema=TOKEN_SCHEMA)
@@ -220,6 +241,12 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class AlreadyConfigured(HomeAssistantError):
     """Error to indicate integration is already configured."""
+
+
+class CaptchaServiceFailed(HomeAssistantError):
+    """Error to indicate the browser service could not produce a reCAPTCHA
+    token: a key it will not take, no units left, or a challenge it could not
+    solve."""
 
 
 class RecaptchaAppeared(HomeAssistantError):
