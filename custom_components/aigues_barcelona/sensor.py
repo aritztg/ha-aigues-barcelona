@@ -1,7 +1,6 @@
 """Platform for sensor integration."""
 
 # from __future__ import annotations
-import contextlib
 import logging
 from datetime import datetime
 from datetime import timedelta
@@ -21,7 +20,6 @@ from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.recorder.statistics import list_statistic_ids
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.sensor import SensorStateClass
 from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_STATE
 from homeassistant.const import CONF_TOKEN
@@ -212,8 +210,13 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         self._data[CONF_STATE] = metric["datetime"]
 
         # await self._clear_statistics()
-        with contextlib.suppress(BaseException):
+        try:
             await self._async_import_statistics(consumptions)
+        except Exception:
+            # A failed import must not take the whole refresh down with it, but
+            # it used to be swallowed by a bare `except: pass`, so statistics
+            # could quietly stop updating with nothing in the log to show for it.
+            _LOGGER.exception("Could not import statistics for %s", self.contract)
 
         if LAST_TIME_DAYS and LAST_TIME_DAYS >= 7:
             await self.import_old_consumptions(days=LAST_TIME_DAYS)
@@ -263,11 +266,14 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         )
 
         for stat_id in all_ids:
-            if (
-                stat_id["statistic_id"] == self.internal_sensor_id
-                and stat_id.get("sum")
-                and stat_id["sum"] > last_stored["sum"]
-            ):
+            # `last_stored` starts as None, so the previous version subscripted
+            # None on the first match and raised TypeError. Nothing called this
+            # method, so the crash stayed hidden.
+            if stat_id["statistic_id"] != self.internal_sensor_id:
+                continue
+            if stat_id.get("sum") is None:
+                continue
+            if last_stored is None or stat_id["sum"] > last_stored["sum"]:
                 last_stored = stat_id
 
         if last_stored:
@@ -280,6 +286,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         consumptions = sort_by_datetime(consumptions)
 
         stats = []
+        running_sum = None
         for metric in consumptions:
             start_ts = _metric_datetime(metric)
             start_ts = start_ts.replace(minute=0, second=0, microsecond=0)  # required
@@ -287,13 +294,18 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             # round: fixes decimal with 20 digits precision
             state = round(metric["accumulatedConsumption"], 4)
 
+            # `accumulatedConsumption` is the meter's absolute reading, which is
+            # already cumulative, so it doubles as the statistics sum. What it is
+            # not is guaranteed to grow: the API occasionally serves a stale,
+            # lower reading. Home Assistant turns any drop in `sum` into negative
+            # consumption, so hold the previous value instead of stepping back.
+            running_sum = state if running_sum is None else max(running_sum, state)
+
             stats.append(
                 {
                     "start": start_ts,
                     "state": state,
-                    # -- required to show in historic/recorder
-                    # -- incremental sum = current total value, so we don't show negative values in HA
-                    "sum": state,
+                    "sum": running_sum,
                 }
             )
         metadata = {
@@ -342,8 +354,20 @@ class ContadorAgua(CoordinatorEntity, SensorEntity):
         self._attr_has_entity_name = True
         self._attr_should_poll = False
         self._attr_device_class = SensorDeviceClass.WATER
-        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
+
+    # Deliberately no `state_class`. The coordinator imports this entity's
+    # long-term statistics itself, timestamped when the water was actually used
+    # rather than when the reading reached us — the API runs days behind.
+    #
+    # Home Assistant's recorder compiles statistics for every sensor that
+    # declares a `state_class` (see `_get_sensor_states` in
+    # homeassistant/components/sensor/recorder.py). With one set, the recorder
+    # and this integration both wrote the same `sensor.contador_*` series with
+    # different meanings for `sum` — the recorder's consumption since it started
+    # watching, ours the meter's absolute reading. They overwrote each other
+    # hourly and the Energy dashboard showed swings of the meter's whole
+    # lifetime volume as if it were a single day's use.
 
     @property
     def native_value(self):
