@@ -32,7 +32,7 @@ dev = [
 # Replaces black + flake8 + pyupgrade + isort, which were four tools with four
 # configs disagreeing with each other.
 # 88 is black's default, which is what the codebase was formatted with. The old
-# flake8 config said 100, but black did the actual formatting — matching 88 keeps
+# flake8 config said 100, but black did the actual formatting, so matching 88 keeps
 # the switch to ruff from reflowing every file.
 line-length = 88
 target-version = "py314"
