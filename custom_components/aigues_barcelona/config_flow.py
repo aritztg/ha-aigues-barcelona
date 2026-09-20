@@ -16,9 +16,9 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import AiguesApiClient
-from .auth import async_login
 from .auth import LoginFailed
 from .auth import TooSoon
+from .auth import async_login
 from .browserless import ChallengeUnsolved
 from .browserless import ServiceUnavailable
 from .const import API_ERROR_TOKEN_REVOKED
@@ -63,14 +63,11 @@ def check_valid_nif(username: str) -> bool:
         return True
 
     # NIF X2341234H
-    if (
+    return bool(
         username[0].upper() in ["X", "Y", "Z"]
         and username[1:8].isnumeric()
         and not username[-1].isnumeric()
-    ):
-        return True
-
-    return False
+    )
 
 
 async def validate_credentials(
@@ -123,20 +120,25 @@ async def validate_credentials(
             isinstance(api.last_response, dict)
             and api.last_response.get("path") == "recaptchaClientResponse"
         ):
-            raise RecaptchaAppeared
+            raise RecaptchaAppeared from None
 
         if (
             isinstance(api.last_response, str)
             and api.last_response == API_ERROR_TOKEN_REVOKED
         ):
-            raise TokenExpired
+            raise TokenExpired from None
 
         return False
 
 
 class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 2
-    stored_input = dict()
+
+    def __init__(self) -> None:
+        # Was a class attribute, which every config flow instance shared: one
+        # user's half-finished setup leaked into the next one's.
+        super().__init__()
+        self.stored_input: dict = {}
 
     async def async_step_token(
         self, user_input: dict[str, Any] | None = None
