@@ -4,27 +4,46 @@ name: Test
 on:
   push:
     branches:
-    - master
+    - main
   pull_request:
 
 jobs:
-  test:
+  validate:
     name: Valid integration
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Test HACS Action
-      uses: hacs/action@22.5.0
+    - uses: actions/checkout@v7
+    - name: HACS
+      # hacs/action has not cut a release since 2022, so @main is what HACS
+      # documents and what actually gets maintained.
+      uses: hacs/action@main
       with:
         category: integration
-    - name: Test Home Assistant hassfest
+    - name: Home Assistant hassfest
       uses: home-assistant/actions/hassfest@master
-  pre-commit:
-    name: pre-commit
+
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v7
+    - uses: astral-sh/setup-uv@v10
       with:
-        python-version: '3.10'
-    - uses: pre-commit/action@v3.0.0
+        enable-cache: true
+    - run: uv sync --group dev
+    - name: ruff check
+      run: uv run ruff check --output-format=github .
+    - name: ruff format
+      run: uv run ruff format --check .
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: astral-sh/setup-uv@v10
+      with:
+        enable-cache: true
+    - run: uv sync --group dev
+    - name: pytest
+      run: uv run pytest --cov=custom_components --cov-report=term-missing

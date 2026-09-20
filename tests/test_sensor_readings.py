@@ -34,7 +34,10 @@ class TestSortByDatetime:
         ]
 
     def test_keeps_an_already_sorted_list_untouched(self):
-        given = [reading("2026-09-16T01:00:00", 1.0), reading("2026-09-17T01:00:00", 2.0)]
+        given = [
+            reading("2026-09-16T01:00:00", 1.0),
+            reading("2026-09-17T01:00:00", 2.0),
+        ]
         assert sort_by_datetime(given) == given
 
     def test_drops_entries_with_an_unusable_date(self):

@@ -7,40 +7,21 @@ repos:
   rev: v5.0.0
   hooks:
   - id: trailing-whitespace
+  - id: end-of-file-fixer
   - id: check-docstring-first
   - id: check-json
   - id: pretty-format-json
     args: [--autofix, --no-sort-keys]
-  - id: check-added-large-files
   - id: check-yaml
+  - id: check-toml
+  - id: check-added-large-files
+  - id: check-merge-conflict
   - id: debug-statements
-  - id: end-of-file-fixer
-- repo: https://github.com/myint/docformatter
-  rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
+# Replaces black, flake8, pyupgrade, isort and docformatter, which used to be
+# five hooks here. Keep the rev in step with the ruff pinned in pyproject.toml.
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.16.8
   hooks:
-  - id: docformatter
-    language: python
-    args: [--in-place]
-- repo: https://github.com/asottile/pyupgrade
-  rev: v3.19.0
-  hooks:
-  - id: pyupgrade
-    args: [--py38-plus]
-- repo: https://github.com/psf/black
-  rev: 24.10.0
-  hooks:
-  - id: black
-    language_version: python3
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.1.1
-  hooks:
-  - id: flake8
-- repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.10.0
-  hooks:
-  - id: python-use-type-annotations
-- repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-  rev: 0.2.3
-  hooks:
-  - id: yamlfmt
-    args: [--mapping, '2', --sequence, '2', --offset, '0']
+  - id: ruff-check
+    args: [--fix]
+  - id: ruff-format
