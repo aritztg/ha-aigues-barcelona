@@ -45,7 +45,7 @@ The integration is duhow's work, with contributions from martibarri and paissad.
 ### What it does
 
 You get a `sensor` with your meter's latest reading, plus long-term statistics, so your
-water shows up in the Energy dashboard next to electricity and gas.
+water shows up in the Energy dashboard alongside your other utilities.
 
 One thing to expect: readings run one to four days behind. That is simply how Aigües de
 Barcelona publishes them. The meter is read remotely on their schedule, not yours, and no
@@ -114,24 +114,24 @@ showing swings of hundreds of cubic metres, that is the old data. Clear it.
 
 ### What 0.6.0 fixes
 
-Readings jumped around, and the Energy dashboard once reported 956 m³ of water in a single
-day, which happened to be the meter's entire lifetime volume. Two separate faults were
-behind it.
+Two faults could corrupt the water series. Between them they made the Energy dashboard
+report a whole meter's accumulated total as if it were one day's use, with readings
+jumping up and down in between.
 
-The first: the newest reading was picked as `consumptions[-1]`, trusting an order the API
-never promises. When the seven-day window came back shuffled, the sensor published a
-reading from days earlier, and the meter appeared to run backwards.
+Readings could run backwards. The newest measurement was taken as the last item of the
+API's reply, which does not promise any particular order. When a reply came back shuffled,
+the sensor published a reading from days earlier, and a meter appeared to lose water.
+Measurements are now chosen by date.
 
-The second was subtler. The entity declared a `state_class`, which tells Home Assistant's
-recorder to compile statistics for it, while the integration imported statistics for that
-same id. The recorder was counting consumption since it started watching; the integration
-was writing the meter's absolute reading. Both were right by their own logic, and they
-overwrote each other every hour.
+Statistics had two owners. The entity declared a `state_class`, which tells Home
+Assistant's recorder to compile long-term statistics for it, while the integration
+imported statistics for the same id. The recorder counted consumption since it began
+watching; the integration wrote the meter's absolute reading. Each was consistent on its
+own terms, and they overwrote each other every hour.
 
 The entity no longer declares a `state_class`, so the series belongs to the integration
-alone. That has a second benefit: each reading keeps the timestamp of when the water was
-actually used, rather than when the data happened to arrive. The imported `sum` is also
-clamped so it can never decrease.
+alone. Readings also keep the timestamp of when the water was used rather than when the
+data arrived, and the imported total is clamped so it can never decrease.
 
 ### Development
 
@@ -150,7 +150,7 @@ to need black, flake8, pyupgrade, isort and docformatter.
 ### Qué hace
 
 Te da un `sensor` con la última lectura de tu contador, más las estadísticas de largo
-plazo, así que el agua aparece en el panel de Energía junto a la luz y el gas.
+plazo, así que el agua aparece en el panel de Energía junto a tus demás suministros.
 
 Una cosa que conviene saber: las lecturas llegan con uno a cuatro días de retraso. Es
 sencillamente como las publica Aigües de Barcelona. El contador se lee en remoto y a su
@@ -219,23 +219,24 @@ muestra saltos de cientos de metros cúbicos, eso son los datos viejos. Bórralo
 
 ### Qué arregla la 0.6.0
 
-Las lecturas daban saltos, y el panel de Energía llegó a informar de 956 m³ de agua en un
-solo día, que resultaban ser el volumen acumulado de toda la vida del contador. Detrás
-había dos fallos distintos.
+Dos fallos podían corromper la serie del agua. Entre los dos hacían que el panel de
+Energía mostrara el total acumulado de un contador como si fuera el consumo de un solo
+día, con lecturas dando saltos arriba y abajo.
 
-El primero: la lectura más reciente se cogía como `consumptions[-1]`, dando por supuesto un
-orden que la API nunca promete. Cuando la ventana de siete días venía desordenada, el
-sensor publicaba una lectura de días antes y el contador parecía ir hacia atrás.
+Las lecturas podían ir hacia atrás. La medición más reciente se cogía como el último
+elemento de la respuesta de la API, que no promete ningún orden concreto. Cuando una
+respuesta venía desordenada, el sensor publicaba una lectura de días antes y el contador
+parecía perder agua. Ahora las mediciones se eligen por fecha.
 
-El segundo era más sutil. La entidad declaraba un `state_class`, que le dice al recorder de
-Home Assistant que compile estadísticas para ella, mientras la integración importaba
-estadísticas para ese mismo id. El recorder contaba el consumo desde que empezó a observar;
-la integración escribía la lectura absoluta del contador. Cada uno tenía razón según su
-propia lógica, y se pisaban cada hora.
+Las estadísticas tenían dos dueños. La entidad declaraba un `state_class`, que le dice al
+recorder de Home Assistant que compile estadísticas de largo plazo para ella, mientras la
+integración importaba estadísticas para ese mismo id. El recorder contaba el consumo desde
+que empezó a observar; la integración escribía la lectura absoluta del contador. Cada uno
+era coherente en sus propios términos, y se pisaban cada hora.
 
-La entidad ya no declara `state_class`, así que la serie es solo de la integración. Eso
-trae una segunda ventaja: cada lectura conserva la fecha de cuando se gastó el agua, y no
-la de cuando llegó el dato. El `sum` importado además se protege para que nunca decrezca.
+La entidad ya no declara `state_class`, así que la serie es solo de la integración. Las
+lecturas conservan además la fecha de cuando se gastó el agua y no la de cuando llegó el
+dato, y el total importado se protege para que nunca decrezca.
 
 ### Desarrollo
 
