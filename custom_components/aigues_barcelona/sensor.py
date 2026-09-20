@@ -358,13 +358,13 @@ class ContadorAgua(CoordinatorEntity, SensorEntity):
 
     # Deliberately no `state_class`. The coordinator imports this entity's
     # long-term statistics itself, timestamped when the water was actually used
-    # rather than when the reading reached us — the API runs days behind.
+    # rather than when the reading reached us, since the API runs days behind.
     #
     # Home Assistant's recorder compiles statistics for every sensor that
     # declares a `state_class` (see `_get_sensor_states` in
     # homeassistant/components/sensor/recorder.py). With one set, the recorder
     # and this integration both wrote the same `sensor.contador_*` series with
-    # different meanings for `sum` — the recorder's consumption since it started
+    # different meanings for `sum`: the recorder's consumption since it started
     # watching, ours the meter's absolute reading. They overwrote each other
     # hourly and the Energy dashboard showed swings of the meter's whole
     # lifetime volume as if it were a single day's use.
