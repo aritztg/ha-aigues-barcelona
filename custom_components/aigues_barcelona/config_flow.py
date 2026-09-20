@@ -38,6 +38,16 @@ ACCOUNT_CONFIG_SCHEMA = vol.Schema(
     }
 )
 TOKEN_SCHEMA = vol.Schema({vol.Required(CONF_TOKEN): cv.string})
+# Reauth takes either: a token to carry on by hand, or a browser service key so
+# the integration can mint its own from now on. Someone upgrading from a version
+# without automatic login reaches this form within the hour, which makes it the
+# one place where the key can be adopted without tearing the entry down.
+REAUTH_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_TOKEN): cv.string,
+        vol.Optional(CONF_API_KEY): cv.string,
+    }
+)
 
 
 def redacted(data) -> dict:
@@ -171,9 +181,12 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Return to user step with stored input (previous user creds) and the
         current provided token."""
 
-        if not user_input:
+        # `is None` rather than falsy: an empty dict means the form came back
+        # with both fields blank, which deserves an error rather than silently
+        # redrawing the same form.
+        if user_input is None:
             return self.async_show_form(
-                step_id="reauth_confirm", data_schema=TOKEN_SCHEMA
+                step_id="reauth_confirm", data_schema=REAUTH_SCHEMA
             )
 
         errors = {}
@@ -182,7 +195,26 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             redacted(getattr(self.entry, "data", None)),
             redacted(user_input),
         )
+
+        # Read both out before merging. After the merge the stored token is back
+        # in the dict, and testing it there cannot tell a token the user just
+        # typed from the expired one that sent us here.
+        given_key = user_input.get(CONF_API_KEY)
+        given_token = user_input.get(CONF_TOKEN)
+
+        if not given_key and not given_token:
+            return self.async_show_form(
+                step_id="reauth_confirm",
+                data_schema=REAUTH_SCHEMA,
+                errors={"base": "need_token_or_key"},
+            )
+
         user_input = {**self.stored_input, **user_input}
+        if given_key and not given_token:
+            # Drop the spent token so validate_credentials logs in with the key
+            # instead of retrying what already failed.
+            user_input.pop(CONF_TOKEN, None)
+
         try:
             info = await validate_credentials(self.hass, user_input)
             _LOGGER.debug(f"Result is {redacted(info)}")
@@ -201,13 +233,21 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             return self.async_abort(reason="reauth_successful")
 
+        except CaptchaServiceFailed:
+            errors["base"] = "captcha_service"
+        except ChallengeLost:
+            errors["base"] = "captcha_unsolved"
+        except WaitingItOut:
+            errors["base"] = "too_soon"
+        except RecaptchaAppeared:
+            errors["base"] = "need_token_or_key"
         except InvalidUsername:
             errors["base"] = "invalid_auth"
         except InvalidAuth:
             errors["base"] = "invalid_auth"
 
         return self.async_show_form(
-            step_id="reauth_confirm", data_schema=TOKEN_SCHEMA, errors=errors
+            step_id="reauth_confirm", data_schema=REAUTH_SCHEMA, errors=errors
         )
 
     async def async_step_user(

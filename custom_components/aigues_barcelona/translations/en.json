@@ -10,7 +10,8 @@
       "token_expired": "OAuth Token has expired, please issue a new one",
       "captcha_service": "The browser service could not be used: check the API key, or whether any units are left this month.",
       "captcha_unsolved": "Google put up an image challenge and the service did not solve it. Try again in a few minutes.",
-      "too_soon": "A login was attempted very recently. Wait a while, or restart Home Assistant."
+      "too_soon": "A login was attempted very recently. Wait a while, or restart Home Assistant.",
+      "need_token_or_key": "Enter either an OAuth token or a browser service API key."
     },
     "step": {
       "user": {
@@ -31,10 +32,11 @@
       },
       "reauth_confirm": {
         "data": {
-          "token": "OAuth Token"
+          "token": "OAuth Token (leave empty if you provide an API key)",
+          "api_key": "Browser service API key (optional)"
         },
-        "title": "Relogin - Provide user OAuth Token",
-        "description": "Since Aig\u00fces de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
+        "title": "Log in again",
+        "description": "Paste a fresh token to carry on by hand, or enter a browser service API key and the integration will get its own from now on, so this form stops coming back. Your credentials never leave Home Assistant: the remote service only mints the captcha."
       }
     }
   }

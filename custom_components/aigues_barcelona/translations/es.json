@@ -10,7 +10,8 @@
       "token_expired": "El Token OAuth ha caducado, por favor genera uno nuevo",
       "captcha_service": "No se pudo usar el servicio de navegador: revisa la clave de API, o comprueba si te quedan unidades este mes.",
       "captcha_unsolved": "Google puso un reto de im\u00e1genes y el servicio no lo resolvi\u00f3. Vuelve a intentarlo en unos minutos.",
-      "too_soon": "Se ha intentado iniciar sesi\u00f3n hace muy poco. Espera un rato o reinicia Home Assistant."
+      "too_soon": "Se ha intentado iniciar sesi\u00f3n hace muy poco. Espera un rato o reinicia Home Assistant.",
+      "need_token_or_key": "Introduce un token OAuth o una clave de API del servicio de navegador."
     },
     "step": {
       "user": {
@@ -31,10 +32,11 @@
       },
       "reauth_confirm": {
         "data": {
-          "token": "OAuth Token"
+          "token": "Token OAuth (d\u00e9jalo vac\u00edo si pones una clave de API)",
+          "api_key": "Clave de API del servicio de navegador (opcional)"
         },
-        "title": "Relogin - Introduce el Token OAuth",
-        "description": "Debido a que Aig\u00fces de Barcelona utiliza Recaptcha para iniciar sesi\u00f3n, no se puede iniciar sesi\u00f3n autom\u00e1ticamente desde Home Assistant, as\u00ed que tienes que iniciar sesi\u00f3n desde la web, y proporcionar el token.\nCopia y pega el token aqu\u00ed (empieza por ey....)"
+        "title": "Volver a iniciar sesi\u00f3n",
+        "description": "Pega un token nuevo para seguir a mano, o introduce una clave de API del servicio de navegador y la integraci\u00f3n conseguir\u00e1 el suyo a partir de ahora, as\u00ed que este formulario dejar\u00e1 de aparecer. Tus credenciales no salen de Home Assistant: el servicio remoto solo genera el captcha."
       }
     }
   }
