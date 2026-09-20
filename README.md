@@ -6,17 +6,46 @@ Puedes ver el 🚰 consumo de agua que has hecho directamente en Home Assistant,
 
 Si te gusta el proyecto, dale a ⭐ **Star** ! 😊
 
-## :warning: NOTA: Login con usuario desactivado (CAPTCHA)
+## Login automático
 
-Inicio del problema: Anterior a `2023-01-23`
-Última actualización: `2024-03-10`
+La API valida el login contra un reCAPTCHA que comprueba con Google en su servidor, así
+que el token no se puede pedir con una petición normal: hace falta que el script de
+reCAPTCHA se ejecute en un navegador de verdad sobre el dominio del sitio. Por eso hasta
+ahora había que copiar el token a mano de la 🍪 cookie `ofexTokenJwt` cada hora.
 
-La API requiere comprobar la petición de login via CAPTCHA.
-Se puede iniciar sesión pasando un Token OAuth manualmente.
-Busca la 🍪 cookie `ofexTokenJwt` y copia el valor.
-El token dura 1h.
+Si le das una clave de API de [Browserless](https://www.browserless.io/) al configurar la
+integración, eso se resuelve solo. Browserless carga una página en blanco en el dominio de
+Aigües de Barcelona, resuelve el reto de imágenes y devuelve el token de reCAPTCHA. **El
+login lo hace Home Assistant**, con ese token, desde tu propia conexión.
 
-Seguimiento del problema en https://github.com/duhow/hass-aigues-barcelona/issues/5 .
+Eso último importa: **tu NIF y tu contraseña no salen de Home Assistant**. El servicio
+remoto solo genera un captcha, que no lleva nada de tu cuenta. Y la petición de login sale
+de tu IP, que es la que el sitio está acostumbrado a ver.
+
+Si dejas la clave vacía, todo funciona como antes y se te pedirá el token a mano.
+
+### Lo que cuesta
+
+Browserless regala 1000 unidades al mes sin pedir tarjeta. Medido sobre el login real:
+
+| concepto | unidades |
+| --- | --- |
+| la sesión de navegador, un bloque por cada 30 segundos | 1 a 4 |
+| resolver el reto de imágenes | 10 |
+| **un login completo** | **11 o 12, hasta 14** |
+| leer contratos y consumos | 0 |
+
+Lo que varía es el reto: Google lo ha resuelto en 7 segundos unas veces y en 43 otras, y
+la sesión se cobra por bloques de 30. Por encima de 14 no sube, porque la espera del reto
+está limitada a 60 segundos y la del script a 20.
+
+Con una consulta diaria salen unas 360 unidades al mes, poco más de un tercio del plan
+gratuito, y con margen de sobra para los días malos. Las lecturas
+no pasan por Browserless: una vez hay token, Home Assistant llama a la API por su cuenta.
+
+Y por eso la integración consulta **una vez al día**: el token dura una hora, así que cada
+consulta gasta un login. Cada cuatro horas serían 1980 unidades al mes y no caben. No se
+pierde nada, porque la lectura del contador llega con uno a cuatro días de retraso.
 
 ## Uso
 

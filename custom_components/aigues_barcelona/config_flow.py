@@ -11,11 +11,18 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_TOKEN
 from homeassistant.const import CONF_USERNAME
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import AiguesApiClient
+from .auth import async_login
+from .auth import LoginFailed
+from .auth import TooSoon
+from .browserless import ChallengeUnsolved
+from .browserless import ServiceUnavailable
 from .const import API_ERROR_TOKEN_REVOKED
+from .const import CONF_API_KEY
 from .const import CONF_CONTRACT
 from .const import DOMAIN
 
@@ -25,9 +32,24 @@ ACCOUNT_CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
+        # Left empty, the token has to be pasted by hand every hour, which is
+        # how this integration worked before.
+        vol.Optional(CONF_API_KEY): cv.string,
     }
 )
 TOKEN_SCHEMA = vol.Schema({vol.Required(CONF_TOKEN): cv.string})
+
+
+def redacted(data) -> dict:
+    """A copy of a config dict with the secrets replaced by a marker.
+
+    These end up in the log at debug level, which is exactly what
+    someone turns on before pasting the output into an issue.
+    """
+    if not isinstance(data, dict):
+        return data
+    secret = (CONF_PASSWORD, CONF_TOKEN, CONF_API_KEY)
+    return {k: ("***" if k in secret and v else v) for k, v in data.items()}
 
 
 def check_valid_nif(username: str) -> bool:
@@ -61,20 +83,36 @@ async def validate_credentials(
     if not check_valid_nif(username):
         raise InvalidUsername
 
+    api = AiguesApiClient(username, password)
+
+    if not token:
+        api_key = data.get(CONF_API_KEY)
+        if not api_key:
+            raise RecaptchaAppeared
+        _LOGGER.info("Attempting to login")
+        try:
+            token = await async_login(hass, api_key, username, password, force=True)
+        except ServiceUnavailable as err:
+            _LOGGER.warning("Browser service unavailable: %s", err)
+            raise CaptchaServiceFailed(str(err)) from err
+        except ChallengeUnsolved as err:
+            _LOGGER.warning("Challenge not solved: %s", err)
+            raise ChallengeLost(str(err)) from err
+        except TooSoon as err:
+            _LOGGER.warning("Login paced out: %s", err)
+            raise WaitingItOut(str(err)) from err
+        except LoginFailed as err:
+            _LOGGER.warning("Login refused: %s", err)
+            raise InvalidAuth from err
+        _LOGGER.info("Login succeeded!")
+
+    api.set_token(token)
+
     try:
-        api = AiguesApiClient(username, password)
-        if token:
-            api.set_token(token)
-        else:
-            _LOGGER.info("Attempting to login")
-            login = await hass.async_add_executor_job(api.login)
-            if not login:
-                raise InvalidAuth
-            _LOGGER.info("Login succeeded!")
         contracts = await hass.async_add_executor_job(api.contracts, username)
 
         available_contracts = [x["contractDetail"]["contractNumber"] for x in contracts]
-        return {CONF_CONTRACT: available_contracts}
+        return {CONF_CONTRACT: available_contracts, CONF_TOKEN: token}
 
     except Exception:
         _LOGGER.debug(f"Last data: {api.last_response}")
@@ -138,12 +176,14 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
         _LOGGER.debug(
-            f"Current values on reauth_confirm: {self.entry} --> {user_input}"
+            "Current values on reauth_confirm: %s --> %s",
+            redacted(getattr(self.entry, "data", None)),
+            redacted(user_input),
         )
         user_input = {**self.stored_input, **user_input}
         try:
             info = await validate_credentials(self.hass, user_input)
-            _LOGGER.debug(f"Result is {info}")
+            _LOGGER.debug(f"Result is {redacted(info)}")
             if not info:  # invalid oauth token
                 raise InvalidAuth
 
@@ -182,7 +222,7 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             self.stored_input = user_input
             info = await validate_credentials(self.hass, user_input)
-            _LOGGER.debug(f"Result is {info}")
+            _LOGGER.debug(f"Result is {redacted(info)}")
             if not info:
                 raise InvalidAuth
             contracts = info[CONF_CONTRACT]
@@ -196,6 +236,12 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="token", data_schema=TOKEN_SCHEMA, errors=errors
             )
+        except CaptchaServiceFailed:
+            errors["base"] = "captcha_service"
+        except ChallengeLost:
+            errors["base"] = "captcha_unsolved"
+        except WaitingItOut:
+            errors["base"] = "too_soon"
         except RecaptchaAppeared:
             # Ask for OAuth Token to login.
             return self.async_show_form(step_id="token", data_schema=TOKEN_SCHEMA)
@@ -206,7 +252,9 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except AlreadyConfigured:
             errors["base"] = "already_configured"
         else:
-            _LOGGER.debug(f"Creating entity with {user_input} and {contracts=}")
+            _LOGGER.debug(
+                f"Creating entity with {redacted(user_input)} and {contracts=}"
+            )
             nif_oculto = user_input[CONF_USERNAME][-3:][0:2]
 
             return self.async_create_entry(
@@ -220,6 +268,19 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class AlreadyConfigured(HomeAssistantError):
     """Error to indicate integration is already configured."""
+
+
+class CaptchaServiceFailed(HomeAssistantError):
+    """Error to indicate the browser service was unreachable, would not take
+    the key, or has no units left this month."""
+
+
+class ChallengeLost(HomeAssistantError):
+    """Error to indicate Google put up a challenge that was not solved."""
+
+
+class WaitingItOut(HomeAssistantError):
+    """Error to indicate a login was attempted too recently to try again."""
 
 
 class RecaptchaAppeared(HomeAssistantError):

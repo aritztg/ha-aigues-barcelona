@@ -35,6 +35,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator
 
 from .api import AiguesApiClient
+from .auth import async_renew_token
 from .const import API_ERROR_TOKEN_REVOKED
 from .const import ATTR_LAST_MEASURE
 from .const import CONF_CONTRACT
@@ -69,7 +70,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
     contadores = list()
 
     for contract in contracts:
-        coordinator = ContratoAgua(hass, username, password, contract, token=token)
+        coordinator = ContratoAgua(
+            hass, username, password, contract, token=token, entry=config_entry
+        )
         contadores.append(ContadorAgua(coordinator))
 
     # postpone first refresh to speed up startup
@@ -100,9 +103,11 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         contract: str,
         token: str = None,
         prev_data=None,
+        entry=None,
     ) -> None:
         """Initialize the data handler."""
         self.reset = prev_data is None
+        self.entry = entry
 
         self.contract = contract.upper()
         self.id = contract.lower()
@@ -157,10 +162,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
 
         consumptions = None
         try:
-            if self._api.is_token_expired():
-                raise ConfigEntryAuthFailed
-            # TODO: change once recaptcha is fiexd
-            # await self.hass.async_add_executor_job(self._api.login)
+            await self._async_ensure_token()
             consumptions = await self.hass.async_add_executor_job(
                 self._api.consumptions, LAST_WEEK, TODAY, self.contract
             )
@@ -193,6 +195,22 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             await self.import_old_consumptions(days=LAST_TIME_DAYS)
 
         return True
+
+    async def _async_ensure_token(self) -> None:
+        """Make sure the client holds a token that is still good.
+
+        Only reaches for a new one once the stored token is spent,
+        because getting one costs a login.
+        """
+        if self.entry is None:
+            if self._api.is_token_expired():
+                raise ConfigEntryAuthFailed
+            return
+
+        token = await async_renew_token(self.hass, self.entry)
+        if not token:
+            raise ConfigEntryAuthFailed("No valid token available")
+        self._api.set_token(token)
 
     async def _clear_statistics(self) -> None:
         all_ids = await get_db_instance(self.hass).async_add_executor_job(
@@ -272,8 +290,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         today = datetime.now()
         one_year_ago = today - timedelta(days=days)
 
-        if self._api.is_token_expired():
-            raise ConfigEntryAuthFailed
+        await self._async_ensure_token()
 
         current_date = one_year_ago
         while current_date < today:

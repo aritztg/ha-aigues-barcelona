@@ -7,15 +7,20 @@
     "error": {
       "already_configured": "Error: El compte ja ha estat configurat",
       "invalid_auth": "Credencials incorrectes",
-      "token_expired": "El Token OAuth ha caducat, si us plau genera'n un de nou."
+      "token_expired": "El Token OAuth ha caducat, si us plau genera'n un de nou.",
+      "captcha_service": "No s'ha pogut fer servir el servei de navegador: revisa la clau d'API, o comprova si et queden unitats aquest mes.",
+      "captcha_unsolved": "Google ha posat un repte d'imatges i el servei no l'ha resolt. Torna-ho a provar d'aqu\u00ed a uns minuts.",
+      "too_soon": "S'ha intentat iniciar sessi\u00f3 fa molt poc. Espera una estona o reinicia Home Assistant."
     },
     "step": {
       "user": {
         "data": {
           "username": "Usuari (DNI/NIE)",
-          "password": "Contrasenya"
+          "password": "Contrasenya",
+          "api_key": "Clau d'API del servei de navegador (opcional)"
         },
-        "title": "Configurar integraci\u00f3"
+        "title": "Configurar integraci\u00f3",
+        "description": "Amb una clau, la integraci\u00f3 resol sola el captcha de l'inici de sessi\u00f3 i renova el token quan caduca. Les teves credencials no surten de Home Assistant: el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes; un inici de sessi\u00f3 sol gastar-ne 11 o 12, i fins a 14 si Google triga a resoldre el repte. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
       },
       "token": {
         "data": {

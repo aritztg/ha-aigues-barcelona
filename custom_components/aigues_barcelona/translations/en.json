@@ -7,15 +7,20 @@
     "error": {
       "already_configured": "Error: Account is already configured",
       "invalid_auth": "Invalid credentials",
-      "token_expired": "OAuth Token has expired, please issue a new one"
+      "token_expired": "OAuth Token has expired, please issue a new one",
+      "captcha_service": "The browser service could not be used: check the API key, or whether any units are left this month.",
+      "captcha_unsolved": "Google put up an image challenge and the service did not solve it. Try again in a few minutes.",
+      "too_soon": "A login was attempted very recently. Wait a while, or restart Home Assistant."
     },
     "step": {
       "user": {
         "data": {
           "username": "Username (DNI/NIE)",
-          "password": "Password"
+          "password": "Password",
+          "api_key": "Browser service API key (optional)"
         },
-        "title": "Setup integration"
+        "title": "Setup integration",
+        "description": "With a key, the integration solves the login captcha itself and renews the token when it expires. Your credentials never leave Home Assistant: the remote service only mints the captcha. Browserless gives 1000 free units a month; a login usually spends 11 or 12, and up to 14 when Google takes its time over the challenge. Without a key, you have to paste the token by hand."
       },
       "token": {
         "data": {
