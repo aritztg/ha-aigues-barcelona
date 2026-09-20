@@ -1,6 +1,7 @@
 """Platform for sensor integration."""
 
 # from __future__ import annotations
+import contextlib
 import logging
 from datetime import datetime
 from datetime import timedelta
@@ -12,9 +13,9 @@ try:
         DATA_INSTANCE as RECORDER_DATA_INSTANCE,
     )
 except ImportError:  # NEW Home Assistant 2024.08
-    from homeassistant.helpers.recorder import (
-        DATA_INSTANCE as RECORDER_DATA_INSTANCE,
-    )
+    from homeassistant.helpers.recorder import DATA_INSTANCE as RECORDER_DATA_INSTANCE
+
+
 from homeassistant.components.recorder.statistics import async_import_statistics
 from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.recorder.statistics import list_statistic_ids
@@ -27,9 +28,9 @@ from homeassistant.const import CONF_TOKEN
 from homeassistant.const import CONF_USERNAME
 from homeassistant.const import EVENT_HOMEASSISTANT_START
 from homeassistant.const import UnitOfVolume
-from homeassistant.core import callback
 from homeassistant.core import CoreState
 from homeassistant.core import HomeAssistant
+from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator
@@ -43,8 +44,6 @@ from .const import CONF_VALUE
 from .const import DEFAULT_SCAN_PERIOD
 from .const import DOMAIN
 
-from typing import Optional
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -54,6 +53,26 @@ def get_db_instance(hass):
         return recorder_util.get_instance(hass)
     except AttributeError:
         return hass
+
+
+def _metric_datetime(metric) -> datetime | None:
+    """Parse a metric's timestamp, or None when it is missing or malformed."""
+    try:
+        return datetime.fromisoformat(metric["datetime"])
+    except KeyError, TypeError, ValueError:
+        return None
+
+
+def sort_by_datetime(consumptions) -> list:
+    """Return the readings oldest first, dropping any with an unusable date."""
+    dated = [(dt, m) for m in consumptions if (dt := _metric_datetime(m)) is not None]
+    return [m for _, m in sorted(dated, key=lambda pair: pair[0])]
+
+
+def newest_metric(consumptions):
+    """Return the most recent reading, or None when there is none to use."""
+    ordered = sort_by_datetime(consumptions)
+    return ordered[-1] if ordered else None
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
@@ -67,7 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
     contracts = config_entry.data[CONF_CONTRACT]
     token = config_entry.data.get(CONF_TOKEN)
 
-    contadores = list()
+    contadores = []
 
     for contract in contracts:
         coordinator = ContratoAgua(
@@ -101,7 +120,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         username: str,
         password: str,
         contract: str,
-        token: str = None,
+        token: str | None = None,
         prev_data=None,
         entry=None,
     ) -> None:
@@ -180,16 +199,21 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
 
         self._data["consumptions"] = consumptions
 
-        # get last entry - most updated
-        metric = consumptions[-1]
+        # The API does not promise the window comes back in chronological order,
+        # so the newest entry is the one with the highest datetime, not the last
+        # item of the list. Taking consumptions[-1] made the sensor jump back to
+        # a reading from days earlier, which a water meter can never do.
+        metric = newest_metric(consumptions)
+        if metric is None:
+            _LOGGER.warning("No usable consumption entry in the API response")
+            return False
+
         self._data[CONF_VALUE] = metric["accumulatedConsumption"]
         self._data[CONF_STATE] = metric["datetime"]
 
         # await self._clear_statistics()
-        try:
+        with contextlib.suppress(BaseException):
             await self._async_import_statistics(consumptions)
-        except:
-            pass
 
         if LAST_TIME_DAYS and LAST_TIME_DAYS >= 7:
             await self.import_old_consumptions(days=LAST_TIME_DAYS)
@@ -231,7 +255,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
                 clear_statistics, self.hass.data[RECORDER_DATA_INSTANCE], to_clear
             )
 
-    async def get_last_measurement_stored(self) -> Optional[datetime]:
+    async def get_last_measurement_stored(self) -> datetime | None:
         last_stored = None
 
         all_ids = await get_db_instance(self.hass).async_add_executor_job(
@@ -239,9 +263,12 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         )
 
         for stat_id in all_ids:
-            if stat_id["statistic_id"] == self.internal_sensor_id:
-                if stat_id.get("sum") and stat_id["sum"] > last_stored["sum"]:
-                    last_stored = stat_id
+            if (
+                stat_id["statistic_id"] == self.internal_sensor_id
+                and stat_id.get("sum")
+                and stat_id["sum"] > last_stored["sum"]
+            ):
+                last_stored = stat_id
 
         if last_stored:
             _LOGGER.debug(f"Found last stored value: {last_stored}")
@@ -250,18 +277,16 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         return None
 
     async def _async_import_statistics(self, consumptions) -> None:
-        # force sort by datetime
-        consumptions = sorted(
-            consumptions, key=lambda x: datetime.fromisoformat(x["datetime"])
-        )
+        consumptions = sort_by_datetime(consumptions)
 
-        stats = list()
+        stats = []
         for metric in consumptions:
-            start_ts = datetime.fromisoformat(metric["datetime"])
+            start_ts = _metric_datetime(metric)
             start_ts = start_ts.replace(minute=0, second=0, microsecond=0)  # required
 
             # round: fixes decimal with 20 digits precision
             state = round(metric["accumulatedConsumption"], 4)
+
             stats.append(
                 {
                     "start": start_ts,
@@ -269,7 +294,6 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
                     # -- required to show in historic/recorder
                     # -- incremental sum = current total value, so we don't show negative values in HA
                     "sum": state,
-                    # "last_reset": start_ts,
                 }
             )
         metadata = {
