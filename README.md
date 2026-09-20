@@ -108,7 +108,12 @@ the reading is days old regardless.
 
 ### Upgrading from 0.4.x
 
-Version 0.6.0 changes which component owns the sensor's long-term statistics, and the
+Your configuration survives the upgrade, credentials included. To switch on the automatic
+login, wait for the token to expire and Home Assistant will ask you to log in again. That
+form now takes a Browserless API key as well as a token, so putting the key there is all it
+takes. You do not have to set the integration up again.
+
+Version 0.6.0 also changes which component owns the sensor's long-term statistics, and the
 series recorded before the upgrade is not worth keeping. If your Energy dashboard is
 showing swings of hundreds of cubic metres, that is the old data. Clear it.
 
@@ -213,9 +218,15 @@ esperar, porque la lectura tiene días de antigüedad de todos modos.
 
 ### Si vienes de la 0.4.x
 
-La 0.6.0 cambia qué componente es dueño de las estadísticas de largo plazo del sensor, y la
-serie registrada antes de actualizar no merece la pena conservarla. Si tu panel de Energía
-muestra saltos de cientos de metros cúbicos, eso son los datos viejos. Bórralos.
+Tu configuración sobrevive a la actualización, credenciales incluidas. Para activar el
+login automático, espera a que caduque el token y Home Assistant te pedirá volver a iniciar
+sesión. Ese formulario admite ahora una clave de API de Browserless además del token, así
+que basta con ponerla ahí. No hace falta volver a dar de alta la integración.
+
+La 0.6.0 cambia además qué componente es dueño de las estadísticas de largo plazo del
+sensor, y la serie registrada antes de actualizar no merece la pena conservarla. Si tu
+panel de Energía muestra saltos de cientos de metros cúbicos, eso son los datos viejos.
+Bórralos.
 
 ### Qué arregla la 0.6.0
 
