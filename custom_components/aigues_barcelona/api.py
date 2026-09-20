@@ -59,7 +59,7 @@ class AiguesApiClient:
 
     def _query(self, path, query=None, json=None, headers=None, method="GET"):
         if headers is None:
-            headers = dict()
+            headers = {}
         headers = {**self.headers, **headers}
 
         resp = self.cli.request(
@@ -159,7 +159,7 @@ class AiguesApiClient:
         expires = datetime.datetime.fromtimestamp(expires)
         NOW = datetime.datetime.now()
 
-        return NOW >= expires
+        return expires <= NOW
 
     def profile(self, user=None):
         if user is None:
@@ -176,7 +176,9 @@ class AiguesApiClient:
         assert r.json().get("user_data"), "User data missing"
         return r.json()
 
-    def contracts(self, user=None, status=["ASSIGNED", "PENDING"]):
+    def contracts(self, user=None, status=None):
+        if status is None:
+            status = ["ASSIGNED", "PENDING"]
         if user is None:
             user = self._return_token_field("name")
         if isinstance(status, str):
@@ -185,7 +187,7 @@ class AiguesApiClient:
         path = "/ofex-contracts-api/contracts"
         query = {"lang": "ca", "userId": user, "clientId": user}
         for idx, stat in enumerate(status):
-            query[f"assignationStatus[{str(idx)}]"] = stat.upper()
+            query[f"assignationStatus[{idx!s}]"] = stat.upper()
 
         r = self._query(path, query)
 
@@ -199,9 +201,9 @@ class AiguesApiClient:
     @property
     def first_contract(self):
         contract_ids = self.contract_id
-        assert (
-            len(contract_ids) == 1
-        ), "Provide a Contract ID to retrieve specific invoices"
+        assert len(contract_ids) == 1, (
+            "Provide a Contract ID to retrieve specific invoices"
+        )
         return contract_ids[0]
 
     def invoices(self, contract=None, user=None, last_months=36, mode="ALL"):

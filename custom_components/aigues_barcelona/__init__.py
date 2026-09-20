@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.config_entries import SOURCE_REAUTH
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
@@ -41,9 +41,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        if entry.entry_id in hass.data[DOMAIN].keys():
-            hass.data[DOMAIN].pop(entry.entry_id)
+    if unload_ok and entry.entry_id in hass.data[DOMAIN]:
+        hass.data[DOMAIN].pop(entry.entry_id)
     if not hass.data[DOMAIN]:
         del hass.data[DOMAIN]
 

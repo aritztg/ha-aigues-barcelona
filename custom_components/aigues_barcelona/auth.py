@@ -24,9 +24,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 from .api import AiguesApiClient
-from .browserless import async_fetch_captcha_token
 from .browserless import ChallengeUnsolved
 from .browserless import ServiceUnavailable
+from .browserless import async_fetch_captcha_token
 from .const import AUTH_STATE
 from .const import CONF_API_KEY
 from .const import DOMAIN
@@ -63,7 +63,7 @@ def token_expiry(token: str) -> float:
     try:
         claims = json.loads(base64.urlsafe_b64decode(token.split(".")[1] + "=="))
         return float(claims["exp"])
-    except (IndexError, ValueError, KeyError, TypeError):
+    except IndexError, ValueError, KeyError, TypeError:
         _LOGGER.debug("Token carries no readable exp claim, assuming one hour")
         return time.time() + 3600
 
@@ -115,7 +115,7 @@ async def async_login(
         captcha = await async_fetch_captcha_token(
             async_get_clientsession(hass), api_key
         )
-    except (ServiceUnavailable, ChallengeUnsolved):
+    except ServiceUnavailable, ChallengeUnsolved:
         state["blocked_until"] = now + LOGIN_BACKOFF
         raise
 
@@ -124,7 +124,7 @@ async def async_login(
         token = await hass.async_add_executor_job(
             partial(client.login, username, password, captcha)
         )
-    except Exception as err:  # noqa: BLE001 - the client raises bare ones by status
+    except Exception as err:
         raise LoginFailed(_explain(str(err), client.last_response)) from err
 
     if not token:

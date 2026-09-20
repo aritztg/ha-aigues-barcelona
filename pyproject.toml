@@ -1,0 +1,68 @@
+[project]
+name = "ha-aigues-barcelona"
+version = "0.6.0"
+description = "Home Assistant custom integration for Aigües de Barcelona water meter readings"
+readme = "README.md"
+license = { file = "LICENSE" }
+# Pinned by the test harness rather than by the integration: Home Assistant
+# 2026.9 itself requires >=3.14.2, and pytest-homeassistant-custom-component
+# installs that exact Home Assistant.
+requires-python = ">=3.14.2"
+# The integration ships no runtime dependencies of its own: everything it needs
+# is already part of Home Assistant. `manifest.json` stays the source of truth
+# for what Home Assistant installs.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/aritztg/ha-aigues-barcelona"
+Issues = "https://github.com/aritztg/ha-aigues-barcelona/issues"
+
+[dependency-groups]
+# Installed with `uv sync`. pytest-homeassistant-custom-component pins the exact
+# Home Assistant it tests against, so it drags in Home Assistant itself; there is
+# no need to list it separately.
+dev = [
+    "pytest-homeassistant-custom-component>=0.13.366",
+    "pytest-cov>=6.0",
+    "ruff>=0.14",
+    "pre-commit>=4.0",
+]
+
+[tool.ruff]
+# Replaces black + flake8 + pyupgrade + isort, which were four tools with four
+# configs disagreeing with each other.
+# 88 is black's default, which is what the codebase was formatted with. The old
+# flake8 config said 100, but black did the actual formatting — matching 88 keeps
+# the switch to ruff from reflowing every file.
+line-length = 88
+target-version = "py314"
+extend-exclude = ["__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RUF",  # ruff's own
+]
+ignore = [
+    "E501",  # the formatter already handles line length
+]
+
+[tool.ruff.lint.isort]
+# Keeps the one-import-per-line layout the codebase already uses, so switching
+# linter does not rewrite every import block.
+force-single-line = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # asserts are the point of a test
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"

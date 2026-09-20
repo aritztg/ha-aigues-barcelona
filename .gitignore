@@ -162,3 +162,4 @@ cython_debug/
 # Home Assistant / Testing
 
 config/
+.DS_Store
