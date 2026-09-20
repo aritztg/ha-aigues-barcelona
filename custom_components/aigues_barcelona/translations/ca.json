@@ -21,7 +21,7 @@
           "api_key": "Clau d'API del servei de navegador (opcional)"
         },
         "title": "Configurar integraci\u00f3",
-        "description": "Amb una clau, la integraci\u00f3 resol el captcha del login pel seu compte i renova el token quan caduca. Aconsegueix-la a [la teva p\u00e0gina de claus d'API de Browserless](https://www.browserless.io/account/api-keys): amb la clau per defecte n'hi ha prou. Les teves credencials no surten de Home Assistant, perqu\u00e8 el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes i un login no sol costar m\u00e9s de 14. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
+        "description": "Amb una clau, la integraci\u00f3 resol el captcha del login pel seu compte i renova el token quan caduca. Aconsegueix-la a [la teva p\u00e0gina de claus d'API de Browserless]({api_keys_url}): amb la clau per defecte n'hi ha prou. Les teves credencials no surten de Home Assistant, perqu\u00e8 el servei remot nom\u00e9s genera el captcha. Browserless regala 1000 unitats al mes i un login no sol costar m\u00e9s de 14. Sense clau, haur\u00e0s d'enganxar el token a m\u00e0."
       },
       "token": {
         "data": {
@@ -36,7 +36,7 @@
           "api_key": "Clau d'API del servei de navegador (opcional)"
         },
         "title": "Torna a iniciar la sessi\u00f3",
-        "description": "Enganxa un token nou per continuar a m\u00e0, o introdueix una clau d'API del servei de navegador i la integraci\u00f3 obtindr\u00e0 el seu a partir d'ara, de manera que aquest formulari deixar\u00e0 d'apar\u00e8ixer. Browserless te'n d\u00f3na una a [la teva p\u00e0gina de claus d'API](https://www.browserless.io/account/api-keys): entra, copia la clau per defecte i enganxa-la aqu\u00ed. Les teves credencials no surten de Home Assistant, perqu\u00e8 el servei remot nom\u00e9s genera el captcha."
+        "description": "Enganxa un token nou per continuar a m\u00e0, o introdueix una clau d'API del servei de navegador i la integraci\u00f3 obtindr\u00e0 el seu a partir d'ara, de manera que aquest formulari deixar\u00e0 d'apar\u00e8ixer. Browserless te'n d\u00f3na una a [la teva p\u00e0gina de claus d'API]({api_keys_url}): entra, copia la clau per defecte i enganxa-la aqu\u00ed. Les teves credencials no surten de Home Assistant, perqu\u00e8 el servei remot nom\u00e9s genera el captcha."
       }
     }
   }

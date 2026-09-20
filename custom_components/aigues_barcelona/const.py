@@ -21,6 +21,10 @@ API_COOKIE_TOKEN = "ofexTokenJwt"
 
 API_ERROR_TOKEN_REVOKED = "JWT Token Revoked"
 
+# Fed to the setup dialogs through description_placeholders. hassfest
+# rejects a URL written into a translation string.
+BROWSERLESS_KEYS_URL = "https://www.browserless.io/account/api-keys"
+
 # Real Chrome, and out through London. The site sits behind a WAF that turns
 # some datacenter ranges away; London got through where San Francisco and
 # Amsterdam did not. Only the reCAPTCHA token comes from there, so a range that

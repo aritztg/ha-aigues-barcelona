@@ -21,7 +21,7 @@
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
         "title": "Configurar integraci\u00f3n",
-        "description": "Con una clave, la integraci\u00f3n resuelve el captcha del login por su cuenta y renueva el token cuando caduca. Cons\u00edguela en [tu p\u00e1gina de claves de API de Browserless](https://www.browserless.io/account/api-keys): con la clave por defecto basta. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y un login no suele costar m\u00e1s de 14. Sin clave, tendr\u00e1s que pegar el token a mano."
+        "description": "Con una clave, la integraci\u00f3n resuelve el captcha del login por su cuenta y renueva el token cuando caduca. Cons\u00edguela en [tu p\u00e1gina de claves de API de Browserless]({api_keys_url}): con la clave por defecto basta. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y un login no suele costar m\u00e1s de 14. Sin clave, tendr\u00e1s que pegar el token a mano."
       },
       "token": {
         "data": {
@@ -36,7 +36,7 @@
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
         "title": "Volver a iniciar sesi\u00f3n",
-        "description": "Pega un token nuevo para seguir a mano, o introduce una clave de API del servicio de navegador y la integraci\u00f3n conseguir\u00e1 el suyo a partir de ahora, as\u00ed que este formulario dejar\u00e1 de aparecer. Browserless te da una en [tu p\u00e1gina de claves de API](https://www.browserless.io/account/api-keys): entra, copia la clave por defecto y p\u00e9gala aqu\u00ed. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha."
+        "description": "Pega un token nuevo para seguir a mano, o introduce una clave de API del servicio de navegador y la integraci\u00f3n conseguir\u00e1 el suyo a partir de ahora, as\u00ed que este formulario dejar\u00e1 de aparecer. Browserless te da una en [tu p\u00e1gina de claves de API]({api_keys_url}): entra, copia la clave por defecto y p\u00e9gala aqu\u00ed. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha."
       }
     }
   }

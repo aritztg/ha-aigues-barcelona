@@ -22,11 +22,15 @@ from .auth import async_login
 from .browserless import ChallengeUnsolved
 from .browserless import ServiceUnavailable
 from .const import API_ERROR_TOKEN_REVOKED
+from .const import BROWSERLESS_KEYS_URL
 from .const import CONF_API_KEY
 from .const import CONF_CONTRACT
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# Every form that asks for the key links to where it is found.
+PLACEHOLDERS = {"api_keys_url": BROWSERLESS_KEYS_URL}
 
 ACCOUNT_CONFIG_SCHEMA = vol.Schema(
     {
@@ -186,7 +190,9 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # redrawing the same form.
         if user_input is None:
             return self.async_show_form(
-                step_id="reauth_confirm", data_schema=REAUTH_SCHEMA
+                step_id="reauth_confirm",
+                data_schema=REAUTH_SCHEMA,
+                description_placeholders=PLACEHOLDERS,
             )
 
         errors = {}
@@ -207,6 +213,7 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="reauth_confirm",
                 data_schema=REAUTH_SCHEMA,
                 errors={"base": "need_token_or_key"},
+                description_placeholders=PLACEHOLDERS,
             )
 
         user_input = {**self.stored_input, **user_input}
@@ -247,7 +254,10 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "invalid_auth"
 
         return self.async_show_form(
-            step_id="reauth_confirm", data_schema=REAUTH_SCHEMA, errors=errors
+            step_id="reauth_confirm",
+            data_schema=REAUTH_SCHEMA,
+            errors=errors,
+            description_placeholders=PLACEHOLDERS,
         )
 
     async def async_step_user(
@@ -256,7 +266,9 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle configuration step from UI."""
         if user_input is None:
             return self.async_show_form(
-                step_id="user", data_schema=ACCOUNT_CONFIG_SCHEMA
+                step_id="user",
+                data_schema=ACCOUNT_CONFIG_SCHEMA,
+                description_placeholders=PLACEHOLDERS,
             )
 
         errors = {}
@@ -304,7 +316,10 @@ class AiguesBarcelonaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         return self.async_show_form(
-            step_id="user", data_schema=ACCOUNT_CONFIG_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=ACCOUNT_CONFIG_SCHEMA,
+            errors=errors,
+            description_placeholders=PLACEHOLDERS,
         )
 
 
