@@ -21,7 +21,7 @@
           "api_key": "Browser service API key (optional)"
         },
         "title": "Setup integration",
-        "description": "With a key, the integration solves the login captcha itself and renews the token when it expires. Your credentials never leave Home Assistant: the remote service only mints the captcha. Browserless gives 1000 free units a month; a login usually spends 11 or 12, and up to 14 when Google takes its time over the challenge. Without a key, you have to paste the token by hand."
+        "description": "With a key, the integration solves the login captcha itself and renews the token when it expires. Get one on [your Browserless API keys page](https://www.browserless.io/account/api-keys): the default key is enough. Your credentials never leave Home Assistant, since the remote service only mints the captcha. Browserless gives 1000 free units a month and a login usually costs no more than 14. Without a key, you have to paste the token by hand."
       },
       "token": {
         "data": {
@@ -36,7 +36,7 @@
           "api_key": "Browser service API key (optional)"
         },
         "title": "Log in again",
-        "description": "Paste a fresh token to carry on by hand, or enter a browser service API key and the integration will get its own from now on, so this form stops coming back. Your credentials never leave Home Assistant: the remote service only mints the captcha."
+        "description": "Paste a fresh token to carry on by hand, or enter a browser service API key and the integration will get its own from now on, so this form stops coming back. Browserless gives you one on [your API keys page](https://www.browserless.io/account/api-keys): sign in, copy the default key, paste it here. Your credentials never leave Home Assistant, since the remote service only mints the captcha."
       }
     }
   }
