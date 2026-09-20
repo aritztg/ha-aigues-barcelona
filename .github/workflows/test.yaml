@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
-    - uses: astral-sh/setup-uv@v10
+    - uses: astral-sh/setup-uv@v10.1.0  # no v10 major tag exists, only full versions
       with:
         enable-cache: true
     - run: uv sync --group dev
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
-    - uses: astral-sh/setup-uv@v10
+    - uses: astral-sh/setup-uv@v10.1.0  # no v10 major tag exists, only full versions
       with:
         enable-cache: true
     - run: uv sync --group dev
