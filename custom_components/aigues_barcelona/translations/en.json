@@ -28,7 +28,7 @@
           "token": "OAuth Token"
         },
         "title": "Provide user OAuth Token",
-        "description": "Since Aigües de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
+        "description": "Since Aig\u00fces de Barcelona uses Recaptcha, you'll need to provide the Token manually.\nPlease paste the token string here (starts with ey....)"
       },
       "reauth_confirm": {
         "data": {
@@ -37,6 +37,13 @@
         },
         "title": "Log in again",
         "description": "Paste a fresh token to carry on by hand, or enter a browser service API key and the integration will get its own from now on, so this form stops coming back. Browserless gives you one on [your API keys page]({api_keys_url}): sign in, copy the default key, paste it here. Your credentials never leave Home Assistant, since the remote service only mints the captcha."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_meter": {
+        "name": "Water meter"
       }
     }
   }

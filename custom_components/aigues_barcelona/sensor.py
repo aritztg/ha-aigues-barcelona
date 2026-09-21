@@ -23,6 +23,8 @@ from homeassistant.core import CoreState
 from homeassistant.core import HomeAssistant
 from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator
 
@@ -445,13 +447,22 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
 class ContadorAgua(CoordinatorEntity, SensorEntity):
     """Representation of a sensor."""
 
+    _attr_has_entity_name = True
+    # The name comes from the translations rather than being written here in
+    # Spanish, matching how the core water integrations name their entities.
+    _attr_translation_key = "water_meter"
+
     def __init__(self, coordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self._attr_name = f"Contador {coordinator.id}"
         self._attr_unique_id = coordinator.id
         self._attr_icon = "mdi:water-pump"
-        self._attr_has_entity_name = True
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.contract)},
+            manufacturer="Aigües de Barcelona",
+            name=f"Aigües de Barcelona {coordinator.contract}",
+            entry_type=DeviceEntryType.SERVICE,
+        )
         self._attr_should_poll = False
         self._attr_device_class = SensorDeviceClass.WATER
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS

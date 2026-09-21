@@ -9,34 +9,41 @@
       "invalid_auth": "Invalid credentials",
       "token_expired": "El Token OAuth ha caducado, por favor genera uno nuevo",
       "captcha_service": "No se pudo usar el servicio de navegador: revisa la clave de API, o comprueba si te quedan unidades este mes.",
-      "captcha_unsolved": "Google puso un reto de imágenes y el servicio no lo resolvió. Vuelve a intentarlo en unos minutos.",
-      "too_soon": "Se ha intentado iniciar sesión hace muy poco. Espera un rato o reinicia Home Assistant.",
+      "captcha_unsolved": "Google puso un reto de im\u00e1genes y el servicio no lo resolvi\u00f3. Vuelve a intentarlo en unos minutos.",
+      "too_soon": "Se ha intentado iniciar sesi\u00f3n hace muy poco. Espera un rato o reinicia Home Assistant.",
       "need_token_or_key": "Introduce un token OAuth o una clave de API del servicio de navegador."
     },
     "step": {
       "user": {
         "data": {
           "username": "Usuario (DNI/NIE)",
-          "password": "Contraseña",
+          "password": "Contrase\u00f1a",
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
-        "title": "Configurar integración",
-        "description": "Con una clave, la integración resuelve el captcha del login por su cuenta y renueva el token cuando caduca. Consíguela en [tu página de claves de API de Browserless]({api_keys_url}): con la clave por defecto basta. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y un login no suele costar más de 14. Sin clave, tendrás que pegar el token a mano."
+        "title": "Configurar integraci\u00f3n",
+        "description": "Con una clave, la integraci\u00f3n resuelve el captcha del login por su cuenta y renueva el token cuando caduca. Cons\u00edguela en [tu p\u00e1gina de claves de API de Browserless]({api_keys_url}): con la clave por defecto basta. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha. Browserless regala 1000 unidades al mes y un login no suele costar m\u00e1s de 14. Sin clave, tendr\u00e1s que pegar el token a mano."
       },
       "token": {
         "data": {
           "token": "OAuth Token"
         },
         "title": "Introduce el Token OAuth",
-        "description": "Debido a que Aigües de Barcelona utiliza Recaptcha para iniciar sesión, no se puede iniciar sesión automáticamente desde Home Assistant, así que tienes que iniciar sesión desde la web, y proporcionar el token.\nCopia y pega el token aquí (empieza por ey....)"
+        "description": "Debido a que Aig\u00fces de Barcelona utiliza Recaptcha para iniciar sesi\u00f3n, no se puede iniciar sesi\u00f3n autom\u00e1ticamente desde Home Assistant, as\u00ed que tienes que iniciar sesi\u00f3n desde la web, y proporcionar el token.\nCopia y pega el token aqu\u00ed (empieza por ey....)"
       },
       "reauth_confirm": {
         "data": {
-          "token": "Token OAuth (déjalo vacío si pones una clave de API)",
+          "token": "Token OAuth (d\u00e9jalo vac\u00edo si pones una clave de API)",
           "api_key": "Clave de API del servicio de navegador (opcional)"
         },
-        "title": "Volver a iniciar sesión",
-        "description": "Pega un token nuevo para seguir a mano, o introduce una clave de API del servicio de navegador y la integración conseguirá el suyo a partir de ahora, así que este formulario dejará de aparecer. Browserless te da una en [tu página de claves de API]({api_keys_url}): entra, copia la clave por defecto y pégala aquí. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha."
+        "title": "Volver a iniciar sesi\u00f3n",
+        "description": "Pega un token nuevo para seguir a mano, o introduce una clave de API del servicio de navegador y la integraci\u00f3n conseguir\u00e1 el suyo a partir de ahora, as\u00ed que este formulario dejar\u00e1 de aparecer. Browserless te da una en [tu p\u00e1gina de claves de API]({api_keys_url}): entra, copia la clave por defecto y p\u00e9gala aqu\u00ed. Tus credenciales no salen de Home Assistant, porque el servicio remoto solo genera el captcha."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_meter": {
+        "name": "Contador de agua"
       }
     }
   }
