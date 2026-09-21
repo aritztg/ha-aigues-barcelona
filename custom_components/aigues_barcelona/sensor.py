@@ -18,6 +18,7 @@ except ImportError:  # NEW Home Assistant 2024.08
 from homeassistant.components.recorder.statistics import async_import_statistics
 from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.recorder.statistics import list_statistic_ids
+from homeassistant.components.recorder.statistics import statistics_during_period
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import CONF_PASSWORD
@@ -41,6 +42,7 @@ from .const import CONF_CONTRACT
 from .const import CONF_VALUE
 from .const import DEFAULT_SCAN_PERIOD
 from .const import DOMAIN
+from .const import SUM_LOOKBACK_DAYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -282,11 +284,39 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
 
         return None
 
+    async def _stored_sum_before(self, when: datetime) -> float | None:
+        """The cumulative total already recorded just before `when`.
+
+        Each import has to carry on from what the series already holds. Seeding
+        from the batch alone only keeps that batch monotonic: a window whose
+        readings all sit below the stored total would rewrite those hours lower
+        and Home Assistant would report the drop as negative consumption.
+        """
+        window_start = when - timedelta(days=SUM_LOOKBACK_DAYS)
+        stats = await get_db_instance(self.hass).async_add_executor_job(
+            statistics_during_period,
+            self.hass,
+            window_start,
+            when,
+            {self.internal_sensor_id},
+            "hour",
+            None,
+            {"sum"},
+        )
+        rows = stats.get(self.internal_sensor_id) or []
+        return rows[-1].get("sum") if rows else None
+
     async def _async_import_statistics(self, consumptions) -> None:
         consumptions = sort_by_datetime(consumptions)
+        if not consumptions:
+            return
+
+        first = _metric_datetime(consumptions[0]).replace(
+            minute=0, second=0, microsecond=0
+        )
+        running_sum = await self._stored_sum_before(first)
 
         stats = []
-        running_sum = None
         for metric in consumptions:
             start_ts = _metric_datetime(metric)
             start_ts = start_ts.replace(minute=0, second=0, microsecond=0)  # required
@@ -296,9 +326,11 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
 
             # `accumulatedConsumption` is the meter's absolute reading, which is
             # already cumulative, so it doubles as the statistics sum. What it is
-            # not is guaranteed to grow: the API occasionally serves a stale,
-            # lower reading. Home Assistant turns any drop in `sum` into negative
-            # consumption, so hold the previous value instead of stepping back.
+            # not is guaranteed to grow: the API serves stale, lower readings,
+            # and out of order. Home Assistant turns any drop in `sum` into
+            # negative consumption, so never step back from the highest total
+            # seen, whether that came from this batch or from what was already
+            # stored.
             running_sum = state if running_sum is None else max(running_sum, state)
 
             stats.append(

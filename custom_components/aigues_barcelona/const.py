@@ -23,6 +23,11 @@ API_ERROR_TOKEN_REVOKED = "JWT Token Revoked"
 
 # Fed to the setup dialogs through description_placeholders. hassfest
 # rejects a URL written into a translation string.
+# How far back to look for the running total when importing statistics. The
+# API can go quiet for weeks, so a short window would find nothing and
+# restart the total from the batch.
+SUM_LOOKBACK_DAYS = 400
+
 BROWSERLESS_KEYS_URL = "https://www.browserless.io/account/api-keys"
 
 # Real Chrome, and out through London. The site sits behind a WAF that turns

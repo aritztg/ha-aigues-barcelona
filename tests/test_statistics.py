@@ -1,5 +1,6 @@
 """Tests for the long-term statistics the coordinator imports."""
 
+from unittest.mock import AsyncMock
 from unittest.mock import patch
 
 import pytest
@@ -21,10 +22,22 @@ def coordinator(hass: HomeAssistant) -> ContratoAgua:
     return ContratoAgua(hass, "12345678Z", "hunter2", "629067")
 
 
-async def import_stats(coordinator: ContratoAgua, consumptions: list[dict]):
-    """Run the import and hand back the statistics rows it would have written."""
-    target = "custom_components.aigues_barcelona.sensor.async_import_statistics"
-    with patch(target) as imported:
+async def import_stats(
+    coordinator: ContratoAgua, consumptions: list[dict], stored_sum: float | None = None
+):
+    """Run the import and hand back the statistics rows it would have written.
+
+    `stored_sum` stands in for what the series already holds just before the
+    batch, which the coordinator reads from the recorder to carry the running
+    total across imports.
+    """
+    prefix = "custom_components.aigues_barcelona.sensor."
+    with (
+        patch(prefix + "async_import_statistics") as imported,
+        patch.object(
+            ContratoAgua, "_stored_sum_before", new=AsyncMock(return_value=stored_sum)
+        ),
+    ):
         await coordinator._async_import_statistics(consumptions)
     assert imported.called, "no statistics were imported"
     _hass, metadata, stats = imported.call_args.args
@@ -113,3 +126,51 @@ class TestNoStateClass:
         assert sensor.device_class == "water"
         assert sensor.native_unit_of_measurement == "m³"
         assert SensorStateClass  # imported to document what is deliberately absent
+
+
+class TestSumCarriesAcrossImports:
+    """Each poll imports a window; the total has to continue, not restart.
+
+    Seeding only from the batch meant a window whose readings all sat below the
+    stored total rewrote those hours lower, and Home Assistant read the drop as
+    negative consumption.
+    """
+
+    async def test_a_lower_window_does_not_pull_the_total_down(self, coordinator):
+        _meta, stats = await import_stats(
+            coordinator,
+            [
+                reading("2026-09-20T01:00:00", 956.049),
+                reading("2026-09-20T02:00:00", 956.529),
+            ],
+            stored_sum=958.302,
+        )
+        assert [row["sum"] for row in stats] == [958.302, 958.302]
+
+    async def test_the_total_still_grows_past_what_was_stored(self, coordinator):
+        _meta, stats = await import_stats(
+            coordinator,
+            [
+                reading("2026-09-20T01:00:00", 958.500),
+                reading("2026-09-20T02:00:00", 958.900),
+            ],
+            stored_sum=958.302,
+        )
+        assert [row["sum"] for row in stats] == [958.5, 958.9]
+
+    async def test_an_empty_series_starts_from_the_first_reading(self, coordinator):
+        _meta, stats = await import_stats(
+            coordinator, [reading("2026-09-20T01:00:00", 100.0)], stored_sum=None
+        )
+        assert stats[0]["sum"] == 100.0
+
+    async def test_nothing_is_imported_for_an_empty_batch(self, coordinator):
+        prefix = "custom_components.aigues_barcelona.sensor."
+        with (
+            patch(prefix + "async_import_statistics") as imported,
+            patch.object(
+                ContratoAgua, "_stored_sum_before", new=AsyncMock(return_value=None)
+            ),
+        ):
+            await coordinator._async_import_statistics([])
+        assert not imported.called
