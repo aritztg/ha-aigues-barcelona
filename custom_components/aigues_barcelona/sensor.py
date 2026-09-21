@@ -422,23 +422,43 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         await self._clear_statistics()
 
     async def import_old_consumptions(self, days: int = 365) -> None:
+        """Walk the history a week at a time and store what comes back.
+
+        A long window means a long run, so a week that fails is logged and
+        skipped rather than thrown away along with every week after it. The
+        statistics already written stay written.
+        """
         today = datetime.now()
-        one_year_ago = today - timedelta(days=days)
+        start = today - timedelta(days=days)
 
         await self._async_ensure_token()
 
-        current_date = one_year_ago
+        failures = 0
+        current_date = start
         while current_date < today:
-            consumptions = await self.hass.async_add_executor_job(
-                self._api.consumptions_week, current_date, self.contract
-            )
-
-            if consumptions:
-                await self._async_import_statistics(consumptions)
+            try:
+                consumptions = await self.hass.async_add_executor_job(
+                    self._api.consumptions_week, current_date, self.contract
+                )
+            except Exception as err:  # one bad week must not sink the rest
+                failures += 1
+                _LOGGER.warning(
+                    "Could not read the week of %s: %s", current_date.date(), err
+                )
             else:
-                _LOGGER.warning(f"No data available for {current_date}")
+                if consumptions:
+                    await self._async_import_statistics(consumptions)
+                else:
+                    _LOGGER.debug("No data available for %s", current_date.date())
 
             current_date += timedelta(weeks=1)
+
+        if failures:
+            _LOGGER.warning(
+                "Finished the backfill with %s week(s) unread; run it again to "
+                "fill the gaps",
+                failures,
+            )
 
 
 class ContadorAgua(CoordinatorEntity, SensorEntity):
