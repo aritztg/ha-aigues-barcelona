@@ -3,4 +3,23 @@
 
 reset_and_refresh_data:
   name: Reset and Refresh Data
-  description: WARNING! Reset all stored historic/metrics data and start getting metrics from 1 year ago, querying data weekly.
+  description: >-
+    WARNING! Re-reads the meter history from the water company and rewrites the
+    stored statistics, querying one week at a time. Defaults to the last year.
+  fields:
+    days:
+      name: Days
+      description: >-
+        How far back to go. The water company does not promise any particular
+        depth, so asking for more than it keeps simply logs a warning for the
+        weeks it has nothing for.
+      required: false
+      default: 365
+      example: 1095
+      selector:
+        number:
+          min: 7
+          max: 3650
+          step: 1
+          unit_of_measurement: days
+          mode: box
