@@ -314,13 +314,21 @@ class AiguesApiClient:
         data = r.json().get("data")
         return data
 
-    def consumptions_week(self, date_from: datetime.date, contract=None, user=None):
+    def consumptions_week(
+        self, date_from: datetime.date, contract=None, user=None, frequency="HOURLY"
+    ):
+        """Read one calendar week.
+
+        Asking for hours costs the same one request and the API quietly
+        answers with daily totals for weeks it no longer keeps that detail
+        for, so there is nothing to gain by asking for less.
+        """
         if date_from is None:
             date_from = datetime.datetime.now()
         # get first day of week
         monday = date_from - datetime.timedelta(days=date_from.weekday())
         sunday = monday + datetime.timedelta(days=6)
-        return self.consumptions(monday, sunday, contract, user, frequency="DAILY")
+        return self.consumptions(monday, sunday, contract, user, frequency=frequency)
 
     def consumptions_month(self, date_from: datetime.date, contract=None, user=None):
         first = date_from.replace(day=1)

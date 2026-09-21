@@ -427,6 +427,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         A long window means a long run, so a week that fails is logged and
         skipped rather than thrown away along with every week after it. The
         statistics already written stay written.
+
         """
         today = datetime.now()
         start = today - timedelta(days=days)

@@ -150,6 +150,12 @@ Aigües de Barcelona seems to keep around three years. Asking for eight returns 
 data as asking for three, so there is no point going further, and weeks it has nothing for
 are skipped rather than treated as errors.
 
+How detailed that history is depends on its age. The company keeps hour by hour readings
+for the last ten months or so and only daily totals before that, and it decides which one
+you get. The import always asks for hours, which costs no extra requests, so you end up
+with the finest detail available for every day. In the Energy dashboard that means the
+recent months show the shape of a day and the older ones show one block per day.
+
 The walk sends one request per week, which past a hundred or so trips the company's rate
 limiter. That is handled: the integration waits as long as it is told and tries again, and
 a week it still cannot read is logged and skipped instead of ending the run. Three years
@@ -284,6 +290,13 @@ data:
 Aigües de Barcelona parece guardar unos tres años. Pedir ocho devuelve lo mismo que pedir
 tres, así que no merece la pena ir más atrás, y las semanas de las que no tiene nada se
 saltan en vez de contarse como error.
+
+El detalle depende de la antigüedad. La compañía conserva lecturas hora a hora de los
+últimos diez meses aproximadamente, y solo totales diarios de lo anterior; lo decide ella,
+no nosotros. La importación pide siempre horas, que no cuesta ninguna petición de más, así
+que te quedas con el mayor detalle disponible para cada día. En el panel de Energía eso se
+traduce en que los meses recientes enseñan la forma del día y los antiguos un bloque por
+día.
 
 El recorrido manda una petición por semana, y pasadas un centenar salta el límite de
 peticiones de la compañía. Está contemplado: la integración espera lo que le pidan y lo

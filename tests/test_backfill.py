@@ -5,6 +5,7 @@ send enough requests to trip the API's rate limiter, and a single refusal
 ended the run, discarding every week that had not been read yet.
 """
 
+import inspect
 from unittest.mock import AsyncMock
 from unittest.mock import patch
 
@@ -79,3 +80,26 @@ async def test_an_empty_week_is_not_a_failure(coordinator, caplog):
     assert remaining == []
     assert imported == [[3]]
     assert "unread" not in caplog.text
+
+
+async def test_asks_for_hourly_detail(coordinator):
+    """Daily totals land in a single hourly bucket, flattening the day.
+
+    The same request costs the same either way, and the API answers with
+    daily totals of its own accord once the hourly detail has aged out.
+    """
+    with (
+        patch.object(coordinator, "_async_ensure_token", new=AsyncMock()),
+        patch.object(
+            coordinator.hass, "async_add_executor_job", new=AsyncMock(return_value=[])
+        ) as job,
+    ):
+        await coordinator.import_old_consumptions(days=7)
+
+    assert job.await_args.args[0] == coordinator._api.consumptions_week
+    assert (
+        inspect.signature(coordinator._api.consumptions_week)
+        .parameters["frequency"]
+        .default
+        == "HOURLY"
+    )
