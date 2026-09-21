@@ -5,16 +5,17 @@ reset_and_refresh_data:
   name: Reset and Refresh Data
   description: >-
     WARNING! Re-reads the meter history from the water company and rewrites the
-    stored statistics, querying one week at a time. Defaults to the last year.
+    stored statistics, querying one week at a time. Defaults to the last two
+    years.
   fields:
     days:
       name: Days
       description: >-
-        How far back to go. The water company does not promise any particular
-        depth, so asking for more than it keeps simply logs a warning for the
-        weeks it has nothing for.
+        How far back to go. The company appears to keep around three years,
+        and weeks it has no data for are skipped, so overshooting is harmless
+        beyond the extra requests.
       required: false
-      default: 365
+      default: 730
       example: 1095
       selector:
         number:

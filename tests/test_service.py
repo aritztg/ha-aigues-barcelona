@@ -42,7 +42,7 @@ async def test_finds_the_coordinator_past_the_auth_state(hass: HomeAssistant):
 
     await call_service(hass)
 
-    coordinator.import_old_consumptions.assert_awaited_once_with(days=365)
+    coordinator.import_old_consumptions.assert_awaited_once_with(days=730)
 
 
 async def test_refreshes_every_contract(hass: HomeAssistant):
@@ -56,8 +56,8 @@ async def test_refreshes_every_contract(hass: HomeAssistant):
 
     await call_service(hass)
 
-    first.import_old_consumptions.assert_awaited_once_with(days=365)
-    second.import_old_consumptions.assert_awaited_once_with(days=365)
+    first.import_old_consumptions.assert_awaited_once_with(days=730)
+    second.import_old_consumptions.assert_awaited_once_with(days=730)
 
 
 async def test_says_so_when_there_is_nothing_to_refresh(hass: HomeAssistant, caplog):
@@ -84,13 +84,13 @@ class TestHowFarBack:
     was only ever our own choice. Anyone wanting more history can ask for it.
     """
 
-    async def test_defaults_to_a_year(self, hass: HomeAssistant):
+    async def test_defaults_to_two_years(self, hass: HomeAssistant):
         coordinator = fake_coordinator("629067")
         hass.data[DOMAIN] = {"629067": {"coordinator": coordinator}}
 
         await call_service(hass)
 
-        coordinator.import_old_consumptions.assert_awaited_once_with(days=365)
+        coordinator.import_old_consumptions.assert_awaited_once_with(days=730)
 
     async def test_goes_back_as_far_as_asked(self, hass: HomeAssistant):
         coordinator = fake_coordinator("629067")

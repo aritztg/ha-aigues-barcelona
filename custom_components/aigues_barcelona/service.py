@@ -10,7 +10,9 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 CONF_DAYS = "days"
-DEFAULT_DAYS = 365
+# The company serves roughly three years and the walk is cheap, so two is a
+# reasonable starting point for anyone who has been a customer that long.
+DEFAULT_DAYS = 730
 
 # The backfill walks a week at a time, so anything shorter than that would ask
 # the water company for a window it cannot answer.
