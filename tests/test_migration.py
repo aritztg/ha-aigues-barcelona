@@ -41,13 +41,13 @@ async def run_migration(coordinator: ContratoAgua, listed: list, rows: list):
             return listed
         if name == "statistics_during_period":
             return {ENTITY_ID: rows}
-        if name == "clear_statistics":
-            calls["cleared"] = args[1]
         return None
 
     executor.side_effect = fake_job
     instance = AsyncMock()
     instance.async_add_executor_job = fake_job
+    # Clearing goes through the recorder's own queue, not an executor job.
+    instance.async_clear_statistics = lambda ids: calls.__setitem__("cleared", ids)
 
     def capture(_hass, metadata, stats):
         calls["imported"] = (metadata, stats)

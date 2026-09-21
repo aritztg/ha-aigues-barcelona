@@ -8,7 +8,6 @@ from datetime import timedelta
 import homeassistant.components.recorder.util as recorder_util
 import homeassistant.util.dt as dt_util
 from homeassistant.components.recorder.statistics import async_add_external_statistics
-from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.recorder.statistics import list_statistic_ids
 from homeassistant.components.recorder.statistics import statistics_during_period
 from homeassistant.components.sensor import SensorDeviceClass
@@ -305,9 +304,11 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
                 )
                 _LOGGER.warning("Migrated %s statistics rows", len(migrated))
 
-        await instance.async_add_executor_job(
-            clear_statistics, instance, [self.internal_sensor_id]
-        )
+        # Queued on the recorder's own thread. Running clear_statistics in an
+        # executor job instead looks like it works and silently leaves the rows
+        # in place, which is what the "does not seem to work" note in earlier
+        # versions was about.
+        instance.async_clear_statistics([self.internal_sensor_id])
 
     async def _clear_statistics(self) -> None:
         all_ids = await get_db_instance(self.hass).async_add_executor_job(
@@ -323,11 +324,7 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             _LOGGER.warn(
                 f"About to delete {len(to_clear)} entries from {self.contract}"
             )
-            # clear_statistics wants the Recorder itself. Reaching into
-            # hass.data for it raises KeyError before the recorder has
-            # registered, which is why this used to be marked as not working.
-            instance = get_db_instance(self.hass)
-            await instance.async_add_executor_job(clear_statistics, instance, to_clear)
+            get_db_instance(self.hass).async_clear_statistics(to_clear)
 
     async def get_last_measurement_stored(self) -> datetime | None:
         last_stored = None
