@@ -23,6 +23,29 @@ It also clears up three things left open in the original:
   numbers meant, so they overwrote each other every hour.
 - Tooling and CI that had not been touched since 2024. There are tests now, and they run.
 
+## Upgrading to 0.6.0: one manual step
+
+> [!WARNING]
+> **Read this before upgrading from 0.5.x or earlier.**
+>
+> Long-term statistics move to a new id. Your history is copied across
+> automatically and nothing is lost, but the Energy dashboard stores a
+> reference to the old id and cannot follow the move on its own.
+>
+> **After upgrading, go to Settings, then Dashboards, then Energy, and point
+> the water source at `aigues_barcelona:water_meter_<your contract>`.** Until
+> you do, the water section will be empty.
+>
+> If Home Assistant showed you a repair issue saying the sensor "no longer has
+> a state class", close it. Do not press its delete button: that erases the
+> history this upgrade preserves. The issue disappears once the upgrade has
+> run.
+
+Why the move: statistics used to be written onto the sensor's own id, which
+Home Assistant treats as the recorder's. Two components then owned one series
+and overwrote each other. External statistics are what Home Assistant provides
+for readings that arrive days late and belong at past timestamps.
+
 ## About this fork
 
 The original project, [duhow/hass-aigues-barcelona](https://github.com/duhow/hass-aigues-barcelona),
@@ -215,6 +238,30 @@ esperar, porque la lectura tiene días de antigüedad de todos modos.
 3. Ve a Ajustes, Dispositivos y servicios, Añadir integración, y búscala.
 4. Introduce tu NIF y tu contraseña. Añade también una clave de Browserless si quieres el
    login automático.
+
+### Actualizar a la 0.6.0: un paso manual
+
+> [!WARNING]
+> **Lee esto antes de actualizar desde la 0.5.x o anterior.**
+>
+> Las estadísticas de largo plazo cambian de id. Tu histórico se copia solo y
+> no se pierde nada, pero el panel de Energía guarda una referencia al id
+> antiguo y no puede seguir el cambio por su cuenta.
+>
+> **Después de actualizar, ve a Ajustes, Paneles, Energía, y apunta la fuente
+> de agua a `aigues_barcelona:water_meter_<tu contrato>`.** Hasta que lo hagas,
+> la sección de agua aparecerá vacía.
+>
+> Si Home Assistant te mostró un aviso de reparación diciendo que el sensor «ya
+> no tiene una clase de estado», ciérralo. No pulses su botón de eliminar: borra
+> el histórico que esta actualización conserva. El aviso desaparece en cuanto la
+> actualización se ejecuta.
+
+Por qué el cambio: las estadísticas se escribían sobre el id del propio sensor,
+que Home Assistant considera suyo. Dos componentes acababan siendo dueños de la
+misma serie y se pisaban. Las estadísticas externas son lo que Home Assistant
+ofrece para lecturas que llegan con días de retraso y pertenecen a fechas
+pasadas.
 
 ### Si vienes de la 0.4.x
 
