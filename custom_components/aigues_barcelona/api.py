@@ -2,6 +2,8 @@ import base64
 import datetime
 import json
 import logging
+import re
+import time
 
 import requests
 
@@ -11,7 +13,22 @@ from .version import VERSION
 
 TIMEOUT = 60
 
+# Walking a long history sends one request per week, which is enough to trip
+# the API's rate limiter. It answers 429 and says how long to hold off, so the
+# request is worth retrying rather than losing the week.
+RATE_LIMIT_RETRIES = 6
+RATE_LIMIT_DEFAULT_WAIT = 5
+RATE_LIMIT_MAX_WAIT = 60
+
 _LOGGER: logging.Logger = logging.getLogger(__name__)
+
+
+class RateLimited(Exception):
+    """The API turned the request away and said to come back later."""
+
+    def __init__(self, message: str, retry_after: int) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class AiguesApiClient:
@@ -57,7 +74,40 @@ class AiguesApiClient:
 
         return json.loads(data).get(key)
 
+    @staticmethod
+    def _retry_after(resp, msg) -> int:
+        """How long the API wants us to wait before asking again."""
+        header = resp.headers.get("Retry-After")
+        if header and header.isdigit():
+            return min(int(header), RATE_LIMIT_MAX_WAIT)
+        # No header on this API, but the body says "Try again in N seconds".
+        found = re.search(r"(\d+)\s*second", str(msg))
+        if found:
+            # One second is what it always claims, and obeying it to the letter
+            # just trips the limiter again, so never wait less than the default.
+            return min(
+                max(int(found.group(1)), RATE_LIMIT_DEFAULT_WAIT), RATE_LIMIT_MAX_WAIT
+            )
+        return RATE_LIMIT_DEFAULT_WAIT
+
     def _query(self, path, query=None, json=None, headers=None, method="GET"):
+        """Run a request, waiting out the rate limiter if it asks us to."""
+        for attempt in range(RATE_LIMIT_RETRIES):
+            try:
+                return self._request(path, query, json, headers, method)
+            except RateLimited as err:
+                if attempt == RATE_LIMIT_RETRIES - 1:
+                    raise
+                _LOGGER.debug(
+                    "Rate-limited on %s, waiting %ss (attempt %s)",
+                    path,
+                    err.retry_after,
+                    attempt + 1,
+                )
+                time.sleep(err.retry_after)
+        raise AssertionError("unreachable")
+
+    def _request(self, path, query=None, json=None, headers=None, method="GET"):
         if headers is None:
             headers = {}
         headers = {**self.headers, **headers}
@@ -88,7 +138,7 @@ class AiguesApiClient:
         if resp.status_code == 400:
             raise Exception(f"Bad response: {msg}")
         if resp.status_code == 429:
-            raise Exception(f"Rate-Limited: {msg}")
+            raise RateLimited(f"Rate-Limited: {msg}", self._retry_after(resp, msg))
 
         return resp
 
