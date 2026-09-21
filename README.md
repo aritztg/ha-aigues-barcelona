@@ -23,6 +23,9 @@ It also clears up three things left open in the original:
   numbers meant, so they overwrote each other every hour.
 - Tooling and CI that had not been touched since 2024. There are tests now, and they run.
 
+And the history import is no longer capped at a year: the company keeps about three, and
+you can ask for as much of it as you want.
+
 ## Upgrading to 0.6.0: one manual step
 
 > [!WARNING]
@@ -128,6 +131,30 @@ the reading is days old regardless.
 3. Go to Settings, then Devices & Services, then Add integration, and search for it.
 4. Enter your NIF and password. Add a Browserless API key too if you want the automatic
    login.
+
+### Loading older history
+
+A fresh install only knows about the last week. To pull in the rest, go to **Developer
+tools**, then **Actions**, search for *Aigües de Barcelona: Reset and Refresh Data*, and
+run it. The form has a **Days** box for how far back to go, and it defaults to two years.
+
+In YAML the same call looks like this:
+
+```yaml
+action: aigues_barcelona.reset_and_refresh_data
+data:
+  days: 1095
+```
+
+Aigües de Barcelona seems to keep around three years. Asking for eight returns the same
+data as asking for three, so there is no point going further, and weeks it has nothing for
+are skipped rather than treated as errors.
+
+The walk sends one request per week, which past a hundred or so trips the company's rate
+limiter. That is handled: the integration waits as long as it is told and tries again, and
+a week it still cannot read is logged and skipped instead of ending the run. Three years
+takes a minute or two. You can run it again afterwards to fill any gaps, since the
+statistics are rewritten rather than appended.
 
 ### Upgrading from 0.4.x
 
@@ -238,6 +265,31 @@ esperar, porque la lectura tiene días de antigüedad de todos modos.
 3. Ve a Ajustes, Dispositivos y servicios, Añadir integración, y búscala.
 4. Introduce tu NIF y tu contraseña. Añade también una clave de Browserless si quieres el
    login automático.
+
+### Cargar histórico antiguo
+
+Una instalación nueva solo conoce la última semana. Para traer el resto, ve a
+**Herramientas para desarrolladores**, pestaña **Acciones**, busca *Aigües de Barcelona:
+Reset and Refresh Data* y ejecútala. El formulario tiene una caja **Days** para indicar
+cuántos días quieres recuperar, y por defecto son dos años.
+
+En YAML, la misma llamada:
+
+```yaml
+action: aigues_barcelona.reset_and_refresh_data
+data:
+  days: 1095
+```
+
+Aigües de Barcelona parece guardar unos tres años. Pedir ocho devuelve lo mismo que pedir
+tres, así que no merece la pena ir más atrás, y las semanas de las que no tiene nada se
+saltan en vez de contarse como error.
+
+El recorrido manda una petición por semana, y pasadas un centenar salta el límite de
+peticiones de la compañía. Está contemplado: la integración espera lo que le pidan y lo
+vuelve a intentar, y una semana que aun así no pueda leer se registra y se salta en lugar
+de tumbar toda la ejecución. Tres años tardan un par de minutos. Puedes volver a lanzarla
+después para rellenar huecos, porque las estadísticas se reescriben, no se acumulan.
 
 ### Actualizar a la 0.6.0: un paso manual
 
