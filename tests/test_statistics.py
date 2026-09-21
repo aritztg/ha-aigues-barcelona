@@ -33,7 +33,7 @@ async def import_stats(
     """
     prefix = "custom_components.aigues_barcelona.sensor."
     with (
-        patch(prefix + "async_import_statistics") as imported,
+        patch(prefix + "async_add_external_statistics") as imported,
         patch.object(
             ContratoAgua, "_stored_sum_before", new=AsyncMock(return_value=stored_sum)
         ),
@@ -98,13 +98,21 @@ class TestImportedSum:
         )
         assert stats[0]["state"] == 1.2346
 
-    async def test_metadata_marks_the_series_as_a_sum(self, coordinator):
+    async def test_metadata_describes_an_external_series(self, coordinator):
+        """Not the entity's own id.
+
+        Writing onto sensor.contador_* made Home Assistant's recorder and this
+        integration co-owners of one series, and left anyone upgrading with a
+        repair issue whose only offered remedy was deleting their history.
+        """
         meta, _stats = await import_stats(
             coordinator, [reading("2026-09-17T01:00:00", 1.0)]
         )
         assert meta["has_sum"] is True
         assert meta["has_mean"] is False
-        assert meta["statistic_id"] == "sensor.contador_629067"
+        assert meta["statistic_id"] == "aigues_barcelona:water_meter_629067"
+        assert meta["source"] == "aigues_barcelona"
+        assert not meta["statistic_id"].startswith("sensor.")
 
 
 class TestNoStateClass:
@@ -167,7 +175,7 @@ class TestSumCarriesAcrossImports:
     async def test_nothing_is_imported_for_an_empty_batch(self, coordinator):
         prefix = "custom_components.aigues_barcelona.sensor."
         with (
-            patch(prefix + "async_import_statistics") as imported,
+            patch(prefix + "async_add_external_statistics") as imported,
             patch.object(
                 ContratoAgua, "_stored_sum_before", new=AsyncMock(return_value=None)
             ),

@@ -6,16 +6,8 @@ from datetime import datetime
 from datetime import timedelta
 
 import homeassistant.components.recorder.util as recorder_util
-
-try:
-    from homeassistant.components.recorder.const import (
-        DATA_INSTANCE as RECORDER_DATA_INSTANCE,
-    )
-except ImportError:  # NEW Home Assistant 2024.08
-    from homeassistant.helpers.recorder import DATA_INSTANCE as RECORDER_DATA_INSTANCE
-
-
-from homeassistant.components.recorder.statistics import async_import_statistics
+import homeassistant.util.dt as dt_util
+from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.components.recorder.statistics import clear_statistics
 from homeassistant.components.recorder.statistics import list_statistic_ids
 from homeassistant.components.recorder.statistics import statistics_during_period
@@ -98,6 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
     @callback
     async def async_first_refresh(*args):
         for sensor in contadores:
+            await sensor.coordinator.async_migrate_entity_statistics()
             await sensor.coordinator.async_refresh()
 
     # ------
@@ -131,6 +124,12 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
         self.contract = contract.upper()
         self.id = contract.lower()
         self.internal_sensor_id = f"sensor.contador_{self.id}"
+        # Long-term statistics live under an external id rather than the
+        # entity's own. Readings arrive days late and belong at past
+        # timestamps, which is what external statistics are for; writing them
+        # onto the entity id put this integration and Home Assistant's recorder
+        # on the same series, each with its own idea of what `sum` meant.
+        self.external_statistic_id = f"{DOMAIN}:water_meter_{self.id}"
 
         if not hass.data[DOMAIN].get(self.contract):
             # init data shared store
@@ -241,6 +240,73 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             raise ConfigEntryAuthFailed("No valid token available")
         self._api.set_token(token)
 
+    async def async_migrate_entity_statistics(self) -> None:
+        """Move statistics recorded against the entity to the external series.
+
+        Versions up to 0.5 wrote long-term statistics onto `sensor.contador_*`,
+        an id Home Assistant treats as the recorder's own. Left there they
+        raise a repair issue whose only offered remedy is deleting the history,
+        so the rows are copied to the external series first and the old one is
+        dropped afterwards. Finding nothing to move is the normal case and
+        costs one query.
+        """
+        instance = get_db_instance(self.hass)
+        all_ids = await instance.async_add_executor_job(list_statistic_ids, self.hass)
+        stale = next(
+            (
+                x
+                for x in all_ids
+                if x["statistic_id"] == self.internal_sensor_id
+                and x.get("source") == "recorder"
+            ),
+            None,
+        )
+        if stale is None:
+            return
+
+        _LOGGER.warning(
+            "Migrating statistics from %s to %s",
+            self.internal_sensor_id,
+            self.external_statistic_id,
+        )
+        stats = await instance.async_add_executor_job(
+            statistics_during_period,
+            self.hass,
+            dt_util.utc_from_timestamp(0),
+            None,
+            {self.internal_sensor_id},
+            "hour",
+            None,
+            {"state", "sum"},
+        )
+        rows = stats.get(self.internal_sensor_id) or []
+        if rows:
+            running = None
+            migrated = []
+            for row in rows:
+                total = row.get("sum")
+                if total is None:
+                    continue
+                # The old series could step backwards, which is what made it
+                # worth leaving behind. Carry the highest total across.
+                running = total if running is None else max(running, total)
+                migrated.append(
+                    {
+                        "start": dt_util.utc_from_timestamp(row["start"]),
+                        "state": row.get("state"),
+                        "sum": running,
+                    }
+                )
+            if migrated:
+                async_add_external_statistics(
+                    self.hass, self._statistics_metadata(), migrated
+                )
+                _LOGGER.warning("Migrated %s statistics rows", len(migrated))
+
+        await instance.async_add_executor_job(
+            clear_statistics, instance, [self.internal_sensor_id]
+        )
+
     async def _clear_statistics(self) -> None:
         all_ids = await get_db_instance(self.hass).async_add_executor_job(
             list_statistic_ids, self.hass
@@ -255,10 +321,11 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             _LOGGER.warn(
                 f"About to delete {len(to_clear)} entries from {self.contract}"
             )
-            # NOTE: This does not seem to work?
-            await get_db_instance(self.hass).async_add_executor_job(
-                clear_statistics, self.hass.data[RECORDER_DATA_INSTANCE], to_clear
-            )
+            # clear_statistics wants the Recorder itself. Reaching into
+            # hass.data for it raises KeyError before the recorder has
+            # registered, which is why this used to be marked as not working.
+            instance = get_db_instance(self.hass)
+            await instance.async_add_executor_job(clear_statistics, instance, to_clear)
 
     async def get_last_measurement_stored(self) -> datetime | None:
         last_stored = None
@@ -298,12 +365,12 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
             self.hass,
             window_start,
             when,
-            {self.internal_sensor_id},
+            {self.external_statistic_id},
             "hour",
             None,
             {"sum"},
         )
-        rows = stats.get(self.internal_sensor_id) or []
+        rows = stats.get(self.external_statistic_id) or []
         return rows[-1].get("sum") if rows else None
 
     async def _async_import_statistics(self, consumptions) -> None:
@@ -340,16 +407,17 @@ class ContratoAgua(TimestampDataUpdateCoordinator):
                     "sum": running_sum,
                 }
             )
-        metadata = {
+        async_add_external_statistics(self.hass, self._statistics_metadata(), stats)
+
+    def _statistics_metadata(self) -> dict:
+        return {
             "has_mean": False,
             "has_sum": True,
-            "name": None,
-            "source": "recorder",  # required
-            "statistic_id": self.internal_sensor_id,
+            "name": f"Water meter {self.contract}",
+            "source": DOMAIN,
+            "statistic_id": self.external_statistic_id,
             "unit_of_measurement": UnitOfVolume.CUBIC_METERS,
         }
-        # _LOGGER.debug(f"Adding metric: {metadata} {stats}")
-        async_import_statistics(self.hass, metadata, stats)
 
     async def clear_all_stored_data(self) -> None:
         await self._clear_statistics()
